@@ -1,0 +1,13 @@
+{
+  "version": "5",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1700756615575,
+      "tag": "0000_conscious_captain_universe",
+      "breakpoints": true
+    }
+  ]
+}

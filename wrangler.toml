@@ -1,0 +1,9 @@
+
+
+compatibility_flags = [ "nodejs_compat" ]
+
+[[ d1_databases ]]
+binding = "DB"
+database_name = "middlecat_db"
+database_id = "9"
+preview_database_id = "DB"
