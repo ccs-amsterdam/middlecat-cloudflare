@@ -14,7 +14,8 @@
     "pages:build": "npx @cloudflare/next-on-pages",
     "pages:deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static",
     "pages:watch": "npx @cloudflare/next-on-pages --watch",
-    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat"
+    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat",
+    "pages:dev:live": "npx wrangler pages dev --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat -- next dev"
   },
   "dependencies": {
     "@auth/core": "^0.18.3",
