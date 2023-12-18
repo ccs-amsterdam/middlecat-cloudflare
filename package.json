@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "watch": "tsc --watch",
+    "next_env": "cp .dev.vars .env.local",
     "migrate:prepare": "npx drizzle-kit generate:sqlite --schema=src/drizzle/schema.ts --out=./migrations",
     "migrate:up:local": "npx wrangler d1 migrations apply middlecat_db --local",
     "migrate:local": "npm run migrate:prepare && npm run migrate:up:local",
@@ -15,20 +16,24 @@
     "pages:deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static",
     "pages:watch": "npx @cloudflare/next-on-pages --watch",
     "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat",
-    "pages:dev:live": "npx wrangler pages dev --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat -- next dev"
+    "pages:dev:live": "npm run next_env && npx wrangler pages dev --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat -- next dev"
   },
   "dependencies": {
     "@auth/core": "^0.18.3",
     "@auth/d1-adapter": "^0.2.6",
     "@auth/drizzle-adapter": "^0.3.8",
+    "@cloudflare/workers-types": "^4.20231121.0",
+    "@tanstack/react-query": "^5.14.1",
     "drizzle-orm": "^0.29.0",
     "next": "14.0.3",
-    "next-auth": "^5.0.0-beta.3",
+    "next-auth": "^5.0.0-beta.4",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-icons": "^4.12.0"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.7.4",
+    "@tailwindcss/typography": "^0.5.10",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

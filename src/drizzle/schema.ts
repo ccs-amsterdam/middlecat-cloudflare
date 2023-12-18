@@ -60,5 +60,5 @@ export const verificationTokens = sqliteTable(
 );
 // APPLICATION TABLES
 
-const db = drizzle(process.env.DB);
+const db = drizzle(process.env.DB1);
 export default db;

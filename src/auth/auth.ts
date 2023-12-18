@@ -8,8 +8,8 @@ export const {
   handlers: { GET, POST },
   auth,
 } = NextAuth({
+  trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
-
   adapter: DrizzleAdapter(db),
   providers: [
     {
@@ -51,8 +51,7 @@ export const {
         });
 
         if (!response.ok) {
-          const { errors } = await response.json();
-          throw new Error(JSON.stringify(errors));
+          throw new Error(`${response.status} ${response.statusText}`);
         }
       },
     },
