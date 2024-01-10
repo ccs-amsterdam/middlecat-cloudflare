@@ -3,6 +3,7 @@ import {
   sqliteTable,
   text,
   primaryKey,
+  index,
 } from "drizzle-orm/sqlite-core";
 import type { AdapterAccount } from "@auth/core/adapters";
 import { drizzle } from "drizzle-orm/d1";
@@ -35,7 +36,7 @@ export const accounts = sqliteTable(
     session_state: text("session_state"),
   },
   (account) => ({
-    compoundKey: primaryKey(account.provider, account.providerAccountId),
+    pk: primaryKey({ columns: [account.provider, account.providerAccountId] }),
   })
 );
 
@@ -55,10 +56,45 @@ export const verificationTokens = sqliteTable(
     expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
   },
   (vt) => ({
-    compoundKey: primaryKey(vt.identifier, vt.token),
+    pk: primaryKey({ columns: [vt.identifier, vt.token] }),
   })
 );
-// APPLICATION TABLES
+
+export const amcatSessions = sqliteTable(
+  "amcatSession",
+  {
+    id: text("id").notNull().primaryKey(),
+
+    // session management
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    label: text("label").notNull(),
+    expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
+
+    // authorization code flow
+    secret: text("secret"),
+    secretExpires: integer("secretExpires", { mode: "timestamp_ms" }),
+    codeChallenge: text("codeChallenge"),
+
+    // access token
+    createdOn: text("createdOn").notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
+    clientId: text("clientId").notNull(),
+    resource: text("resource").notNull(),
+    scope: text("scope").notNull(),
+
+    // refresh token
+    refreshToken: text("refreshToken"),
+    refreshRotate: integer("refreshRotate", { mode: "boolean" }).notNull(),
+    refreshRotatedAt: integer("refreshRotatedAt", { mode: "timestamp_ms" }),
+    refreshPrevious: text("refreshPrevious"),
+  },
+  (table) => ({
+    expiresIdx: index("expires_idx").on(table.expires),
+  })
+);
 
 const db = drizzle(process.env.DB1);
 export default db;

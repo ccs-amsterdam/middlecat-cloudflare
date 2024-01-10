@@ -1,11 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createAccessToken } from "./createJWT";
-import { randomBytes } from "crypto";
-import prisma from "./prismadb";
+import { randomBytes, randomUUID } from "crypto";
+import db, { amcatRefreshTokens, amcatSessions, users } from "@/drizzle/schema";
 import { createHash } from "crypto";
-import { AmcatSession } from "@prisma/client";
-import { User } from "next-auth";
 import settings from "./settings";
+import { InferSelectModel, and, eq, isNull } from "drizzle-orm";
 
 export async function authorizationCodeRequest(
   res: NextApiResponse,
@@ -22,121 +21,130 @@ export async function authorizationCodeRequest(
   // our authorization code is actually the table id + auth code
   const [id, secret] = code.split(".");
 
-  const session = await prisma.amcatSession.findFirst({
-    where: { id, secret },
-    include: { user: true },
-  });
+  const [{ amcatSession, user }] = await db
+    .select()
+    .from(amcatSessions)
+    .where(and(eq(amcatSessions.id, id), eq(amcatSessions.secret, secret)))
+    .leftJoin(users, eq(amcatSessions.userId, users.id))
+    .limit(1);
 
-  if (!session || !session.secret) {
-    // if session doesn't have a secret, it means it doesn't use oauth
+  if (!amcatSession || !user || !amcatSession.secret) {
+    // if amcatSession doesn't have a secret, it means it doesn't use oauth
     return res.status(401).send({ message: "Invalid token request" });
   }
 
   if (
-    codeChallenge !== session.codeChallenge ||
-    !session.secretExpires ||
-    session.secretExpires < new Date(Date.now())
+    codeChallenge !== amcatSession.codeChallenge ||
+    !amcatSession.secretExpires ||
+    amcatSession.secretExpires < new Date(Date.now())
   ) {
-    // Reasons for deleting the session
+    // Reasons for deleting the amcatSession
     // - if codeChallenge failed, auth code could be compromised
     // - If secret already used (no secretExpires), could be that bad actor was first
-    // - If the secret expired, the session can never be started anyway
-    await prisma.amcatSession.delete({
-      where: { id: session.id },
-    });
+    // - If the secret expired, the amcatSession can never be started anyway
+
+    await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));
     return res.status(401).send({ message: "Invalid token request" });
   }
 
   // authorization code has now been validated. We remove the secret stuff
   // to indicate that it can no longer be used.
-  await prisma.amcatSession.update({
-    where: { id: session.id },
-    data: { secretExpires: null },
-  });
+  await db
+    .update(amcatSessions)
+    .set({ secretExpires: null })
+    .where(eq(amcatSessions.id, amcatSession.id));
 
-  await createTokens(res, req, session, session.user);
+  await createTokens(res, req, amcatSession, user);
 }
 
 export async function refreshTokenRequest(
   res: NextApiResponse,
   req: NextApiRequest
 ) {
-  const refreshToken = req.body.refresh_token;
-  const [id, secret] = refreshToken.split(".");
+  // the refresh token that the client receives is actually the session id + refresh token
+  const [sessionId, refreshToken] = req.body.refresh_token.split(".");
 
-  const arf = await prisma.amcatRefreshToken.findFirst({
-    where: { id, secret },
-    include: {
-      amcatsession: {
-        include: {
-          user: true,
-        },
-      },
-    },
-  });
+  const [{ amcatSession, user }] = await db
+    .select()
+    .from(amcatSessions)
+    .where(and(eq(amcatSessions.id, sessionId)))
+    .leftJoin(users, eq(amcatSessions.userId, users.id))
+    .limit(1);
 
-
-  if (!arf) {
+  if (!amcatSession || !user || amcatSession.expires < new Date(Date.now())) {
+    if (amcatSession)
+      await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
     return res.status(401).send({ message: "Invalid refreshtoken request" });
   }
 
-  const leeway = 10000;
-  if (arf.invalidSince && arf.invalidSince < new Date(Date.now() - leeway)) {
-    // If refreshRotate is used, and refresh token is used multiple times,
-    // it indicates that the session could be compromised. To not immediately
-    // close a session if an accidental double call is made or when the response
-    // doesn't arrive, we allow for a small time window (leeway)
-    await prisma.amcatSession.delete({
-      where: { id: arf.amcatsessionId },
-    });
+  const isValid = amcatSession.refreshToken === refreshToken;
+  const isPrevious =
+    amcatSession.refreshPrevious &&
+    amcatSession.refreshPrevious === refreshToken;
+
+  if (!isValid && !isPrevious) {
+    // If token is not valid nor the previous token, kill the entire session. This way
+    // if a refresh token was stolen, the legitimate user will break the session
+    await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
     return res.status(401).send({ message: "Invalid refreshtoken request" });
   }
 
-  if (arf.amcatsession.refreshRotate) {
-    // if refresh token rotation is used, invalidate refresh tokens. Note that we invalidate
-    // all valid tokens for this session, because due to leeway the refresh token
-    // trail could otherwise branch out if a stolen token is used within the leeway period.
-    await prisma.amcatRefreshToken.updateMany({
-      where: { amcatsessionId: arf.amcatsessionId, invalidSince: null },
-      data: { invalidSince: new Date(Date.now()) },
-    });
+  if (amcatSession.refreshRotate) {
+    // the new previous token should be the one used (refreshToken or refreshPrevious).
+    // if not, the legitimate user and thief could take turns refreshing.
+    const usedToken = isPrevious
+      ? amcatSession.refreshPrevious
+      : amcatSession.refreshToken;
+    amcatSession.refreshToken = randomBytes(32).toString("hex");
+
+    await db
+      .update(amcatSessions)
+      .set({
+        refreshToken: amcatSession.refreshToken,
+        refreshPrevious: usedToken,
+      })
+      .where(
+        and(
+          eq(amcatRefreshTokens.amcatSessionId, amcatSession.id),
+          isNull(amcatRefreshTokens.invalidSince)
+        )
+      );
   }
 
-  // browser sessions have a refreshExpires value on the amcatsession to kill sessions that
-  // are inactive for too long. This value should be updated on every token refresh.
-  // (for apiKey sessions refreshExpires is disabled, so should stay null)
-  if (arf.amcatsession.type === "browser")
-    await prisma.amcatSession.update({
-      where: { id: arf.amcatsession.id },
-      data: {
-        refreshExpires: new Date(
-          Date.now() + 1000 * 60 * 60 * settings.refresh_expire_hours
-        ),
-      },
-    });
+  // if a session is a browser session, we keep the expiration date between a certain range.
+  // this lets a frequent user keep their session alive, but without having to update the
+  // expiration date on every request.
+  if (amcatSession.type === "browser") {
+    const expirationDate = amcatSession.expires;
+    const minExpiration = new Date(
+      Date.now() + 1000 * 60 * 60 * settings.session_min_expire_hours
+    );
+    const maxExpiration = new Date(
+      Date.now() + 1000 * 60 * 60 * settings.session_max_expire_hours
+    );
 
-  // if refresh token rotation is not used, pass a static refresh token to createTokens
-  const static_refresh_token = arf.amcatsession.refreshRotate
-    ? null
-    : refreshToken;
+    if (expirationDate < minExpiration || expirationDate > maxExpiration) {
+      await db
+        .update(amcatSessions)
+        .set({
+          expires: new Date(
+            Date.now() + 1000 * 60 * 60 * settings.session_max_expire_hours
+          ),
+        })
+        .where(eq(amcatSessions.id, amcatSession.id));
+    }
+  }
 
-  await createTokens(
-    res,
-    req,
-    arf.amcatsession,
-    arf.amcatsession.user,
-    static_refresh_token
-  );
+  await createTokens(res, req, amcatSession, user);
 }
 
 export async function createTokens(
   res: NextApiResponse,
   req: NextApiRequest,
-  session: AmcatSession,
-  user: User,
-  static_refresh_token?: string
+  amcatSession: InferSelectModel<typeof amcatSessions>,
+  user: InferSelectModel<typeof users>
 ) {
-  const { clientId, resource } = session;
+  const { clientId, resource } = amcatSession;
   const { email, name, image } = user;
 
   // middlecat should always be on https, but exception for localhost
@@ -146,7 +154,7 @@ export async function createTokens(
 
   // expire access tokens
   // (exp seems to commonly be in seconds)
-  const expireMinutes = getExpireMinutes(session.type);
+  const expireMinutes = getExpireMinutes(amcatSession.type);
   const exp = Math.floor(Date.now() / 1000) + 60 * expireMinutes;
 
   const access_token = createAccessToken({
@@ -159,26 +167,19 @@ export async function createTokens(
     middlecat,
   });
 
-  let refresh_token = static_refresh_token;
-  if (!refresh_token) {
-    const art = await prisma.amcatRefreshToken.create({
-      data: {
-        amcatsessionId: session.id,
-        secret: randomBytes(32).toString("hex"),
-      },
-    });
-    refresh_token = art.id + "." + art.secret;
-  }
-
   // oauth typically uses expires_in in seconds as a relative offset (due to local time issues).
   // we subtract 5 seconds because of possible delay in setting expires_in and the client receiving it
   const expires_in = expireMinutes * 60 - 5;
+
+  // the refresh token that the client receives is actually the session id + refresh token
+  const refresh_token = amcatSession.id + "." + amcatSession.refreshToken;
+  const refresh_rotate = amcatSession.refreshRotate;
 
   res.status(200).json({
     token_type: "bearer",
     access_token,
     refresh_token,
-    refresh_rotate: session.refreshRotate,
+    refresh_rotate,
     expires_in,
   });
 }
@@ -203,26 +204,23 @@ export async function killSessionRequest(
 
   // You can kill a session if you have a refresh token.
   // (We don't care if the token is already expired)
-  const arf = await prisma.amcatRefreshToken.findFirst({
-    where: { id, secret },
-    include: { amcatsession: true },
-  });
+  const [{ amcatRefreshToken, amcatSession }] = await db
+    .select()
+    .from(amcatRefreshTokens)
+    .where(
+      and(eq(amcatRefreshTokens.id, id), eq(amcatRefreshTokens.secret, secret))
+    )
+    .leftJoin(
+      amcatSessions,
+      eq(amcatRefreshTokens.amcatSessionId, amcatSessions.id)
+    )
+    .limit(1);
 
-  if (arf) {
-    if (req.body?.sign_out && arf.amcatsession.sessionId) {
-      // sign out from middlecat in general (also kills underlying amcat session)
-      // amcatSessions for R, Python etc. tokens have no sessionId, so for these
-      // we do have to kill the specific amcatSession
-      await prisma.session.delete({
-        where: { id: arf.amcatsession.sessionId },
-      });
-    } else {
-      // only kill amcat session
-      await prisma.amcatSession.delete({
-        where: { id: arf.amcatsessionId },
-      });
-    }
+  if (amcatRefreshToken && amcatSession) {
+    // TODO: we no longer need to support the option to sign out from the middlecat session,
+    // because we will now make middlecat sign out by default.
+    await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));
+    return res.status(201).send({ message: "Session killed (yay)" });
   }
-
-  res.status(201).send({ message: "Session killed (yay)" });
+  return res.status(401).send({ message: "Invalid kill request" });
 }

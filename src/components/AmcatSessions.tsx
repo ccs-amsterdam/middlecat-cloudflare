@@ -3,16 +3,17 @@
 import { Session } from "next-auth";
 import { useEffect, useState } from "react";
 import CreateApiKey from "./CreateApiKey";
-import { ApiKeySession, BrowserSession, SessionData } from "../types";
+import { ApiKeySession, BrowserSession, SessionData } from "@/types";
 import Popup from "./Popup";
+import useCsrf from "@/query/useCsrf";
 
 interface props {
   session: Session | null;
-  csrfToken: string | undefined;
 }
 
-export default function AmcatSessions({ session, csrfToken }: props) {
+export default function AmcatSessions({ session }: props) {
   const [sessionData, setSessionData] = useState<SessionData>();
+  const { data: csrfToken } = useCsrf();
 
   async function fetchSessions() {
     await fetch("/api/sessions")

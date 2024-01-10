@@ -8,6 +8,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
 
+  console.log(status);
   if (status === "loading") return null;
 
   return (
