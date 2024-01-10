@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createAccessToken } from "./createJWT";
-import { randomBytes, randomUUID } from "crypto";
-import db, { amcatRefreshTokens, amcatSessions, users } from "@/drizzle/schema";
+import { randomBytes } from "crypto";
+import db, { amcatSessions, users } from "@/drizzle/schema";
 import { createHash } from "crypto";
 import settings from "./settings";
 import { InferSelectModel, and, eq, isNull } from "drizzle-orm";
@@ -67,7 +67,7 @@ export async function refreshTokenRequest(
   const [{ amcatSession, user }] = await db
     .select()
     .from(amcatSessions)
-    .where(and(eq(amcatSessions.id, sessionId)))
+    .where(eq(amcatSessions.id, sessionId))
     .leftJoin(users, eq(amcatSessions.userId, users.id))
     .limit(1);
 
@@ -103,12 +103,7 @@ export async function refreshTokenRequest(
         refreshToken: amcatSession.refreshToken,
         refreshPrevious: usedToken,
       })
-      .where(
-        and(
-          eq(amcatRefreshTokens.amcatSessionId, amcatSession.id),
-          isNull(amcatRefreshTokens.invalidSince)
-        )
-      );
+      .where(eq(amcatSessions.id, sessionId));
   }
 
   // if a session is a browser session, we keep the expiration date between a certain range.
@@ -117,10 +112,10 @@ export async function refreshTokenRequest(
   if (amcatSession.type === "browser") {
     const expirationDate = amcatSession.expires;
     const minExpiration = new Date(
-      Date.now() + 1000 * 60 * 60 * settings.session_min_expire_hours
+      Date.now() + 1000 * 60 * 60 * settings.browser.session_min_expire_hours
     );
     const maxExpiration = new Date(
-      Date.now() + 1000 * 60 * 60 * settings.session_max_expire_hours
+      Date.now() + 1000 * 60 * 60 * settings.browser.session_max_expire_hours
     );
 
     if (expirationDate < minExpiration || expirationDate > maxExpiration) {
@@ -128,7 +123,8 @@ export async function refreshTokenRequest(
         .update(amcatSessions)
         .set({
           expires: new Date(
-            Date.now() + 1000 * 60 * 60 * settings.session_max_expire_hours
+            Date.now() +
+              1000 * 60 * 60 * settings.browser.session_max_expire_hours
           ),
         })
         .where(eq(amcatSessions.id, amcatSession.id));
@@ -154,7 +150,7 @@ export async function createTokens(
 
   // expire access tokens
   // (exp seems to commonly be in seconds)
-  const expireMinutes = getExpireMinutes(amcatSession.type);
+  const expireMinutes = settings[amcatSession.type].access_expire_minutes;
   const exp = Math.floor(Date.now() / 1000) + 60 * expireMinutes;
 
   const access_token = createAccessToken({
@@ -184,41 +180,20 @@ export async function createTokens(
   });
 }
 
-const getExpireMinutes = function getExpireMinutes(sessionType: string) {
-  switch (sessionType) {
-    case "browser":
-      return settings.access_expire_minutes_browser;
-    case "apiKey":
-      return settings.access_expire_minutes_api;
-    default:
-      return settings.access_expire_minutes_browser;
-  }
-};
-
 export async function killSessionRequest(
   res: NextApiResponse,
   req: NextApiRequest
 ) {
   const refreshToken = req.body.refresh_token;
-  const [id, secret] = refreshToken.split(".");
+  const [sessionId] = refreshToken.split(".");
 
-  // You can kill a session if you have a refresh token.
-  // (We don't care if the token is already expired)
-  const [{ amcatRefreshToken, amcatSession }] = await db
+  const [amcatSession] = await db
     .select()
-    .from(amcatRefreshTokens)
-    .where(
-      and(eq(amcatRefreshTokens.id, id), eq(amcatRefreshTokens.secret, secret))
-    )
-    .leftJoin(
-      amcatSessions,
-      eq(amcatRefreshTokens.amcatSessionId, amcatSessions.id)
-    )
+    .from(amcatSessions)
+    .where(eq(amcatSessions.id, sessionId))
     .limit(1);
 
-  if (amcatRefreshToken && amcatSession) {
-    // TODO: we no longer need to support the option to sign out from the middlecat session,
-    // because we will now make middlecat sign out by default.
+  if (amcatSession) {
     await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));
     return res.status(201).send({ message: "Session killed (yay)" });
   }

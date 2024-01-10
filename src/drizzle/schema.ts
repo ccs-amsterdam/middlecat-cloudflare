@@ -69,7 +69,7 @@ export const amcatSessions = sqliteTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
+    type: text("type", { enum: ["browser", "api"] }).notNull(),
     label: text("label").notNull(),
     expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
 
@@ -86,9 +86,8 @@ export const amcatSessions = sqliteTable(
     scope: text("scope").notNull(),
 
     // refresh token
-    refreshToken: text("refreshToken"),
+    refreshToken: text("refreshToken").notNull(),
     refreshRotate: integer("refreshRotate", { mode: "boolean" }).notNull(),
-    refreshRotatedAt: integer("refreshRotatedAt", { mode: "timestamp_ms" }),
     refreshPrevious: text("refreshPrevious"),
   },
   (table) => ({

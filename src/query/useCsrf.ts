@@ -1,8 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 
+interface csrfResponse {
+  csrfToken: string;
+}
+
 export default function useCsrf() {
   return useQuery({
     queryKey: ["csrfToken"],
-    queryFn: () => fetch("/api/auth/csrf").then((res) => res.json()),
+    queryFn: fetchCsrf,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
+}
+
+async function fetchCsrf() {
+  console.log("fetching csrf token");
+  const res = await fetch("/api/auth/csrf");
+  const data: csrfResponse = await res.json();
+  return data.csrfToken;
 }

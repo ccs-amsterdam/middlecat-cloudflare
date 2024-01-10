@@ -15,10 +15,12 @@ export default function AmcatSessions({ session }: props) {
   const [sessionData, setSessionData] = useState<SessionData>();
   const { data: csrfToken } = useCsrf();
 
+  console.log(csrfToken);
+
   async function fetchSessions() {
     await fetch("/api/sessions")
       .then((res) => res.json())
-      .then(setSessionData)
+      .then((data) => setSessionData(data as SessionData))
       .catch((e) => {
         setSessionData(undefined);
         console.error(e);

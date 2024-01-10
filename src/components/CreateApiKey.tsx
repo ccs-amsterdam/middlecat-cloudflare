@@ -208,8 +208,8 @@ function CreateKeyForm({
 
     if (res.ok) {
       setError(undefined);
-      const data = await res.json();
-      createdToken(data.refresh_token);
+      const data: { refresh_token: string } = await res.json();
+      createdToken(data?.refresh_token as string);
     } else {
       setError(await res.text());
     }
