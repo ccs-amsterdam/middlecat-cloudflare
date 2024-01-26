@@ -3,19 +3,44 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import AmcatSessions from "../components/AmcatSessions";
 import { useState } from "react";
+import { Loading } from "@/components/Loading";
 
 export default function Home() {
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
 
-  console.log(status);
-  if (status === "loading") return null;
+  if (status === "loading") return <Loading />;
 
   return (
     <>
+      <style jsx>{`
+        .Login {
+          margin: auto;
+          width: 100%;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          max-width: 400px;
+        }
+        .Login button {
+          padding: 0.5rem 1rem;
+          border-radius: 5px;
+          border: none;
+          background: var(--primary);
+          color: white;
+          font-size: 1.2rem;
+          cursor: pointer;
+        }
+        .Login button:hover {
+          background: var(--secondary);
+        }
+        .Loading {
+          cursor: progress;
+        }
+      `}</style>
       <div>
-        <div className="m-auto w-full relative flex flex-col max-w-[400px]">
-          <div className="prose">
+        <div className="Login">
+          <div className="">
             <h2 className="text-center">Sessions and API keys</h2>
             <p>
               On this page you can see and disconnect your active AmCAT sessions

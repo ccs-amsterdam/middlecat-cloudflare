@@ -3,7 +3,6 @@
 import {
   CSSProperties,
   memo,
-  MouseEvent,
   ReactNode,
   useEffect,
   useRef,
@@ -20,7 +19,7 @@ function Popup({ trigger, children, style }: Props) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-
+  console.log(open);
   useEffect(() => {
     // use useEffect to force this to run client side
     const popup = popupRef.current as any;
@@ -72,7 +71,7 @@ function Popup({ trigger, children, style }: Props) {
   return (
     <>
       <style jsx>{`
-        .popup {
+        /* .popup {
           transition: opacity 0.5s;
           overflow: auto;
           color: white;
@@ -86,13 +85,13 @@ function Popup({ trigger, children, style }: Props) {
           background: #017575c0;
           backdrop-filter: blur(5px);
           opacity: 0;
-        }
-        button {
+        } */
+        /* button {
           border-color: var(--secondary);
         }
         .cancel {
           margin-top: 0.5rem;
-        }
+        } */
       `}</style>
       <div
         style={{ ...(style || {}) }}
@@ -101,7 +100,7 @@ function Popup({ trigger, children, style }: Props) {
       >
         {trigger}
       </div>
-      <div ref={popupRef} className="popup">
+      <div ref={popupRef} className="">
         {children}
       </div>
     </>

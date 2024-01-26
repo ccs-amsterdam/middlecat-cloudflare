@@ -66,9 +66,7 @@ export const amcatSessions = sqliteTable(
     id: text("id").notNull().primaryKey(),
 
     // session management
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
     type: text("type", { enum: ["browser", "api"] }).notNull(),
     label: text("label").notNull(),
     expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
@@ -91,6 +89,7 @@ export const amcatSessions = sqliteTable(
     refreshPrevious: text("refreshPrevious"),
   },
   (table) => ({
+    emailIds: index("email_idx").on(table.email),
     expiresIdx: index("expires_idx").on(table.expires),
   })
 );

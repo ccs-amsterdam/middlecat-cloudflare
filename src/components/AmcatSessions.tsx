@@ -6,26 +6,27 @@ import CreateApiKey from "./CreateApiKey";
 import { ApiKeySession, BrowserSession, SessionData } from "@/types";
 import Popup from "./Popup";
 import useCsrf from "@/query/useCsrf";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loading } from "./Loading";
+import { ErrorMsg } from "./ErrorMsg";
 
 interface props {
   session: Session | null;
 }
 
+async function fetchSessions(): Promise<SessionData> {
+  const res = await fetch("/api/sessions");
+  if (!res.ok) throw new Error("Could not fetch sessions");
+  return res.json();
+}
+
 export default function AmcatSessions({ session }: props) {
-  const [sessionData, setSessionData] = useState<SessionData>();
+  const queryClient = useQueryClient();
+  const { data: sessionData, isLoading } = useQuery({
+    queryKey: ["sessions"],
+    queryFn: fetchSessions,
+  });
   const { data: csrfToken } = useCsrf();
-
-  console.log(csrfToken);
-
-  async function fetchSessions() {
-    await fetch("/api/sessions")
-      .then((res) => res.json())
-      .then((data) => setSessionData(data as SessionData))
-      .catch((e) => {
-        setSessionData(undefined);
-        console.error(e);
-      });
-  }
 
   async function closeSessions(amcatSessionIds: string[]) {
     const config = {
@@ -37,18 +38,15 @@ export default function AmcatSessions({ session }: props) {
       body: JSON.stringify({ amcatSessionIds, csrfToken }),
     };
 
-    fetch(`/api/closeSessions`, config)
-      .then(fetchSessions)
-      .catch((e) => console.error(e));
+    const res = await fetch(`/api/closeSessions`, config);
+    if (!res.ok) throw new Error("Could not close sessions");
+    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    return res.json();
   }
 
-  useEffect(() => {
-    fetchSessions();
-  }, [session]);
-
+  if (isLoading) <Loading msg="Loading sessions..." />;
   if (!session) return null;
-  if (!sessionData)
-    return <div className="Loader" style={{ marginTop: "5rem" }} />;
+  if (!sessionData) return <ErrorMsg>Could not fetch sessions</ErrorMsg>;
 
   return (
     <div className="SessionData">

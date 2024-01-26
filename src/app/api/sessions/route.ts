@@ -9,6 +9,7 @@ export const runtime = "edge";
 
 export async function GET() {
   const session = await auth();
+  console.log(session);
 
   if (!session?.user?.email) {
     return NextResponse.json(
@@ -22,7 +23,7 @@ export async function GET() {
   const aSessions = await db
     .select()
     .from(amcatSessions)
-    .where(eq(amcatSessions.userId, session.user.id))
+    .where(eq(amcatSessions.email, session.user.email))
     .orderBy(asc(amcatSessions.expires));
 
   const browser: BrowserSession[] = [];

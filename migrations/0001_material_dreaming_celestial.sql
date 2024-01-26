@@ -28,10 +28,3 @@ CREATE TABLE `user` (
 	`emailVerified` integer,
 	`image` text
 );
---> statement-breakpoint
-CREATE TABLE `verificationToken` (
-	`identifier` text NOT NULL,
-	`token` text NOT NULL,
-	`expires` integer NOT NULL,
-	PRIMARY KEY(`identifier`, `token`)
-);

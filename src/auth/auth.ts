@@ -11,6 +11,16 @@ export const {
   trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
   adapter: DrizzleAdapter(db),
+  session: {
+    maxAge: 60 * 15,
+    updateAge: 5 * 60,
+  },
+  theme: {
+    colorScheme: "dark",
+    logo: "/logo.svg",
+    brandColor: "#38c7b9",
+    buttonText: "#000",
+  },
   providers: [
     {
       id: "email",

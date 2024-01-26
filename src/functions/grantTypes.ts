@@ -25,7 +25,7 @@ export async function authorizationCodeRequest(
     .select()
     .from(amcatSessions)
     .where(and(eq(amcatSessions.id, id), eq(amcatSessions.secret, secret)))
-    .leftJoin(users, eq(amcatSessions.userId, users.id))
+    .leftJoin(users, eq(amcatSessions.email, users.email))
     .limit(1);
 
   if (!amcatSession || !user || !amcatSession.secret) {
@@ -68,7 +68,7 @@ export async function refreshTokenRequest(
     .select()
     .from(amcatSessions)
     .where(eq(amcatSessions.id, sessionId))
-    .leftJoin(users, eq(amcatSessions.userId, users.id))
+    .leftJoin(users, eq(amcatSessions.email, users.email))
     .limit(1);
 
   if (!amcatSession || !user || amcatSession.expires < new Date(Date.now())) {
