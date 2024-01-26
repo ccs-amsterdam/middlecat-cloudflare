@@ -15,27 +15,22 @@ export default function Home() {
     <>
       <style jsx>{`
         .Login {
-          margin: auto;
+          margin: 2rem auto;
           width: 100%;
           position: relative;
           display: flex;
           flex-direction: column;
           max-width: 400px;
-        }
-        .Login button {
-          padding: 0.5rem 1rem;
-          border-radius: 5px;
-          border: none;
-          background: var(--primary);
           color: white;
-          font-size: 1.2rem;
-          cursor: pointer;
+          text-align: center;
         }
-        .Login button:hover {
-          background: var(--secondary);
-        }
+
         .Loading {
           cursor: progress;
+        }
+        .AmcatSessions {
+          display: flex;
+          justify-content: center;
         }
       `}</style>
       <div>
@@ -43,11 +38,11 @@ export default function Home() {
           <div className="">
             <h2 className="text-center">Sessions and API keys</h2>
             <p>
-              On this page you can see and disconnect your active AmCAT sessions
-              and manage your API keys.
+              On this page you can see and manage your active MiddleCat sessions
+              and API keys.
             </p>
 
-            <div className="Login">
+            <div className="SignIn">
               {session?.user ? (
                 <>
                   <button
@@ -77,7 +72,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="">
+      <div className="AmcatSessions">
         <AmcatSessions session={session} />
       </div>
     </>

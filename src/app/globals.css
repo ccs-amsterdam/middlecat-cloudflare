@@ -1,14 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   --primary: #38c7b9;
   --primary-warm: coral;
   --secondary: #008080;
   --secondary-warm: rgb(211, 63, 9);
   --blend: #00b4b4;
-  --header: #222;
+  --background: #222;
 }
 
 * {
@@ -16,31 +12,29 @@
 }
 
 body {
+  margin: 0;
+  background: var(--background);
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  overflow-y: scroll;
 }
 
 button {
   width: 100%;
   background: white;
   color: black;
-  border: 2px solid var(--primary);
-  font-size: inherit;
-  max-width: 400px;
-  padding: 0.5rem 2rem;
-  border-radius: 10px;
   transition: background 0.3s;
+  border: none;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  background: var(--primary);
+  font-size: 1.2rem;
+  cursor: pointer;
 }
 
 button:hover:enabled {
+  background: var(--secondary);
   color: white;
-  cursor: pointer;
-  background: var(--primary);
 }
 
 .ButtonGroup {
@@ -52,6 +46,27 @@ button:hover:enabled {
 .ButtonGroup button {
   height: 100%;
   margin: 0px;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 5px;
+  background: #38c7b944;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #38c7b944;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
 .spike-loader {

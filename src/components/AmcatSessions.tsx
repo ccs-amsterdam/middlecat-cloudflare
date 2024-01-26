@@ -50,9 +50,28 @@ export default function AmcatSessions({ session }: props) {
 
   return (
     <div className="SessionData">
-      <div className="AmcatSessions Dark">
+      <style jsx>{`
+        .SessionData {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2rem;
+          color: white;
+          padding: 2rem;
+        }
+        .AmcatSessions {
+          flex: 1 1 auto;
+          width: 100%;
+          min-width: 50%;
+          text-align: center;
+          border: 1px solid var(--primary);
+          border-radius: 1rem;
+          box-shadow: 0px 1px 10px 0px var(--primary);
+        }
+      `}</style>
+
+      <div className="AmcatSessions">
         <div className="Header">
-          <h3>Browser sessions</h3>
+          <h2>Browser sessions</h2>
           <h4 className="PrimaryColor">
             Monitor connections across browsers and devices
           </h4>
@@ -72,7 +91,7 @@ export default function AmcatSessions({ session }: props) {
       </div>
       <div className="AmcatSessions">
         <div className="Header">
-          <h3>API Keys</h3>
+          <h2>API Keys</h2>
           <h4 className="SecondaryColor">Manage and create API keys</h4>
           {sessionData?.apiKey?.length ? null : <h4>- No active API Keys -</h4>}
         </div>

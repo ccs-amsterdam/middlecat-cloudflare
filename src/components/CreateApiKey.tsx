@@ -34,7 +34,7 @@ export default function CreateApiKey({
     const el = container.current;
     el.style.opacity = "0";
     el.style.maxHeight = "10rem";
-    el.style.background = "white";
+    el.style.background = "var(--background)";
     setTimeout(() => {
       el.style.opacity = "1";
 
@@ -48,7 +48,6 @@ export default function CreateApiKey({
       <style jsx>{`
         .NewKey {
           padding: 1rem;
-          background: white;
           color: white;
           width: 35rem;
           max-width: 95vw;
@@ -58,16 +57,14 @@ export default function CreateApiKey({
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          font-size: 2rem;
-
-          overflow: auto;
+          font-size: 1.2rem;
+          overflow: hidden;
           transition: all 0.5s;
           max-height: 10rem;
         }
         .NewKey button {
           width: 20rem;
           border-radius: 7px;
-          border-style: dotted;
         }
       `}</style>
       {!started ? (
@@ -229,7 +226,7 @@ function CreateKeyForm({
         }
         input {
           margin-top: 0.5rem;
-          font-size: 1.5rem;
+          font-size: 1rem;
           width: 100%;
           padding: 0.5rem;
           border-radius: 5px;

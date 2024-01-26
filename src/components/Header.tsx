@@ -2,13 +2,36 @@
 
 export default function Header() {
   return (
-    <div className="p-6 text-center align-middle relative text-white bg-header shadow-sm shadow-secondary mb-12">
+    <header className="Header">
+      <style jsx>{`
+        .Header {
+          padding: 1.5rem 0.5rem;
+          text-align: center;
+          vertical-align: middle;
+          position: relative;
+          color: white;
+          background: var(--header);
+          box-shadow: 0px 0px 10px 0px var(--secondary);
+          border-bottom: 1px solid var(--primary);
+        }
+        h2 {
+          font-size: 5rem;
+          line-height: 5rem;
+          font-weight: bold;
+          margin-bottom: 0;
+          margin-top: 0.5rem;
+        }
+        h4 {
+          font-size: 1.5rem;
+          margin-top: 0;
+          margin-bottom: 0.5rem;
+          color: var(--primary);
+        }
+      `}</style>
       <div>
-        <h2 className="text-7xl font-bold mb-0 mt-4 ">MiddleCat</h2>
-        <h4 className="text-primary text-[1.35rem] mt-0 mb-2">
-          cat-in-the-middle authentication
-        </h4>
+        <h2>MiddleCat</h2>
+        <h4>cat-in-the-middle authentication</h4>
       </div>
-    </div>
+    </header>
   );
 }
