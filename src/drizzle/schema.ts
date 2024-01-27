@@ -1,17 +1,12 @@
-import {
-  integer,
-  sqliteTable,
-  text,
-  primaryKey,
-  index,
-} from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, primaryKey, index } from "drizzle-orm/sqlite-core";
 import type { AdapterAccount } from "@auth/core/adapters";
 import { drizzle } from "drizzle-orm/d1";
+import { randomBytes, randomUUID } from "crypto";
 
 // AUTH TABLES
 
 export const users = sqliteTable("user", {
-  id: text("id").notNull().primaryKey(),
+  id: text("id").primaryKey(),
   name: text("name"),
   email: text("email").notNull(),
   emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
@@ -41,7 +36,7 @@ export const accounts = sqliteTable(
 );
 
 export const sessions = sqliteTable("session", {
-  sessionToken: text("sessionToken").notNull().primaryKey(),
+  sessionToken: text("sessionToken").primaryKey(),
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -63,29 +58,35 @@ export const verificationTokens = sqliteTable(
 export const amcatSessions = sqliteTable(
   "amcatSession",
   {
-    id: text("id").notNull().primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
 
     // session management
     email: text("email").notNull(),
-    type: text("type", { enum: ["browser", "api"] }).notNull(),
+    type: text("type", { enum: ["browser", "apiKey"] }).notNull(),
     label: text("label").notNull(),
     expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
 
     // authorization code flow
-    secret: text("secret"),
-    secretExpires: integer("secretExpires", { mode: "timestamp_ms" }),
     codeChallenge: text("codeChallenge"),
+    secret: text("secret").$defaultFn(() => randomBytes(64).toString("hex")),
+    secretExpires: integer("secretExpires", {
+      mode: "timestamp_ms",
+    }).$defaultFn(() => new Date(Date.now() + 1000 * 60 * 10)), // 10 minutes,
 
     // access token
     createdOn: text("createdOn").notNull(),
-    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date(Date.now())),
     clientId: text("clientId").notNull(),
     resource: text("resource").notNull(),
     scope: text("scope").notNull(),
 
     // refresh token
-    refreshToken: text("refreshToken").notNull(),
     refreshRotate: integer("refreshRotate", { mode: "boolean" }).notNull(),
+    refreshToken: text("refreshToken"),
     refreshPrevious: text("refreshPrevious"),
   },
   (table) => ({

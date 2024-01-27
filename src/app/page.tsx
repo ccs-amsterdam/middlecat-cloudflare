@@ -12,7 +12,7 @@ export default function Home() {
   if (status === "loading") return <Loading />;
 
   return (
-    <>
+    <div className="Login fadeIn">
       <style jsx>{`
         .Login {
           margin: 2rem auto;
@@ -34,47 +34,45 @@ export default function Home() {
         }
       `}</style>
       <div>
-        <div className="Login">
-          <div className="">
-            <h2 className="text-center">Sessions and API keys</h2>
-            <p>
-              On this page you can see and manage your active MiddleCat sessions
-              and API keys.
-            </p>
+        <div className="">
+          <h2 className="text-center">Sessions and API keys</h2>
+          <p>
+            On this page you can see and manage your active MiddleCat sessions
+            and API keys.
+          </p>
 
-            <div className="SignIn">
-              {session?.user ? (
-                <>
-                  <button
-                    className={loading ? "Loading" : ""}
-                    onClick={() => {
-                      setLoading(true);
-                      signOut().catch(() => setLoading(false));
-                    }}
-                  >
-                    sign out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    className={loading ? "Loading" : ""}
-                    onClick={() => {
-                      setLoading(true);
-                      signIn().catch(() => setLoading(false));
-                    }}
-                  >
-                    sign in
-                  </button>
-                </>
-              )}
-            </div>
+          <div className="SignIn">
+            {session?.user ? (
+              <>
+                <button
+                  className={loading ? "Loading" : ""}
+                  onClick={() => {
+                    setLoading(true);
+                    signOut().catch(() => setLoading(false));
+                  }}
+                >
+                  sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className={loading ? "Loading" : ""}
+                  onClick={() => {
+                    setLoading(true);
+                    signIn().catch(() => setLoading(false));
+                  }}
+                >
+                  sign in
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
       <div className="AmcatSessions">
         <AmcatSessions session={session} />
       </div>
-    </>
+    </div>
   );
 }

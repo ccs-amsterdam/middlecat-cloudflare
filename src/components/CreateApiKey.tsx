@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { FaClipboard, FaWindowClose } from "react-icons/fa";
 import copyToClipboard from "../functions/copyToClipboard";
 import getResourceConfig from "../functions/getResourceConfig";
@@ -12,8 +12,7 @@ export default function CreateApiKey({
   csrfToken: string;
   fetchSessions: () => void;
 }) {
-  const container = useRef<HTMLDivElement>(null);
-  const [started, setStarted] = useState(false);
+  const [open, setOpen] = useState(false);
   const [token, setToken] = useState<string>();
 
   function createdToken(token: string) {
@@ -21,63 +20,76 @@ export default function CreateApiKey({
     fetchSessions();
   }
 
-  function start() {
-    if (!container.current) return;
-    container.current.style.maxHeight = "50rem";
-    container.current.style.background = "var(--secondary)";
-
-    setStarted(true);
-  }
-
   function finish() {
-    if (!container.current) return;
-    const el = container.current;
-    el.style.opacity = "0";
-    el.style.maxHeight = "10rem";
-    el.style.background = "var(--background)";
-    setTimeout(() => {
-      el.style.opacity = "1";
-
-      setToken(undefined);
-      setStarted(false);
-    }, 400);
+    setToken(undefined);
+    setOpen(false);
   }
 
   return (
-    <div ref={container} className="NewKey">
+    <div>
+      <button onClick={() => setOpen(true)}>Create new key</button>
+      <Modal visible={open}>
+        {token ? (
+          <ShowAPIKey token={token} finish={finish} />
+        ) : (
+          <CreateKeyForm
+            csrfToken={csrfToken}
+            createdToken={createdToken}
+            finish={finish}
+          />
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+function Modal({
+  children,
+  visible,
+}: {
+  children: React.ReactNode;
+  visible: boolean;
+}) {
+  return (
+    <div className="modal">
       <style jsx>{`
-        .NewKey {
-          padding: 1rem;
-          color: white;
-          width: 35rem;
-          max-width: 95vw;
+        .modal {
+          display: ${visible ? "flex" : "none"};
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: #222d;
+          z-index: 100;
+          justify-content: center;
+          transition: background-color 0.5s;
+          align-items: center;
+        }
+        .modal-content {
+          border: 1px solid var(--primary);
+          box-shadow: 0px 1px 10px 0px var(--secondary);
+          background: var(--secondary);
           border-radius: 5px;
-          margin: 2rem auto;
+          padding: 1rem;
           display: flex;
           flex-direction: column;
-          justify-content: center;
           align-items: center;
-          font-size: 1.2rem;
-          overflow: hidden;
-          transition: all 0.5s;
-          max-height: 10rem;
+          justify-content: center;
+          animation: slideIn 0.5s;
         }
-        .NewKey button {
-          width: 20rem;
-          border-radius: 7px;
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0%);
+          }
         }
       `}</style>
-      {!started ? (
-        <button onClick={() => start()}>Create new key</button>
-      ) : !token ? (
-        <CreateKeyForm
-          csrfToken={csrfToken}
-          createdToken={createdToken}
-          finish={finish}
-        />
-      ) : (
-        <ShowAPIKey token={token} finish={finish} />
-      )}
+      <div className="modal-content">{children}</div>
     </div>
   );
 }
@@ -208,7 +220,7 @@ function CreateKeyForm({
       const data: { refresh_token: string } = await res.json();
       createdToken(data?.refresh_token as string);
     } else {
-      setError(await res.text());
+      setError("Could not create API key :(");
     }
   }
 
@@ -267,6 +279,9 @@ function CreateKeyForm({
         .cancelIcon {
           cursor: pointer;
         }
+        #submit:hover {
+          background-color: #2225;
+        }
       `}</style>
       <div className="cancel">
         <span onClick={() => finish()} className="cancelIcon">
@@ -315,7 +330,7 @@ function CreateKeyForm({
           <input type="checkbox" id="rotate" name="rotating" />
         </div>
 
-        <button id="submit">create</button>
+        <button id="submit">create API key</button>
         <div className="error">{error}</div>
       </form>
     </>

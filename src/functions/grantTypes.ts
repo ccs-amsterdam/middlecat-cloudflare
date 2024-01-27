@@ -1,21 +1,21 @@
-import type { NextApiRequest, NextApiResponse } from "next";
 import { createAccessToken } from "./createJWT";
 import { randomBytes } from "crypto";
 import db, { amcatSessions, users } from "@/drizzle/schema";
 import { createHash } from "crypto";
 import settings from "./settings";
-import { InferSelectModel, and, eq, isNull } from "drizzle-orm";
+import { InferSelectModel, and, eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 export async function authorizationCodeRequest(
-  res: NextApiResponse,
-  req: NextApiRequest
+  host: string,
+  code: string,
+  codeVerifier: string
 ) {
   // validate the authorization code grant, and if pass create
   // the access token and refresh token
-  const { code, code_verifier } = req.body;
 
   const codeChallenge = createHash("sha256")
-    .update(code_verifier)
+    .update(codeVerifier)
     .digest("base64url");
 
   // our authorization code is actually the table id + auth code
@@ -30,7 +30,10 @@ export async function authorizationCodeRequest(
 
   if (!amcatSession || !user || !amcatSession.secret) {
     // if amcatSession doesn't have a secret, it means it doesn't use oauth
-    return res.status(401).send({ message: "Invalid token request" });
+    return NextResponse.json(
+      { message: "Invalid token request" },
+      { status: 404 }
+    );
   }
 
   if (
@@ -44,7 +47,10 @@ export async function authorizationCodeRequest(
     // - If the secret expired, the amcatSession can never be started anyway
 
     await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));
-    return res.status(401).send({ message: "Invalid token request" });
+    return NextResponse.json(
+      { message: "Invalid token request" },
+      { status: 401 }
+    );
   }
 
   // authorization code has now been validated. We remove the secret stuff
@@ -54,15 +60,16 @@ export async function authorizationCodeRequest(
     .set({ secretExpires: null })
     .where(eq(amcatSessions.id, amcatSession.id));
 
-  await createTokens(res, req, amcatSession, user);
+  await createTokens(host, amcatSession, user);
 }
 
 export async function refreshTokenRequest(
-  res: NextApiResponse,
-  req: NextApiRequest
+  host: string,
+  sessionId: string,
+  refreshToken: string
 ) {
   // the refresh token that the client receives is actually the session id + refresh token
-  const [sessionId, refreshToken] = req.body.refresh_token.split(".");
+  //const [sessionId, refreshToken] = refresh_token.split(".");
 
   const [{ amcatSession, user }] = await db
     .select()
@@ -74,7 +81,10 @@ export async function refreshTokenRequest(
   if (!amcatSession || !user || amcatSession.expires < new Date(Date.now())) {
     if (amcatSession)
       await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
-    return res.status(401).send({ message: "Invalid refreshtoken request" });
+    return NextResponse.json(
+      { message: "Invalid refreshtoken request" },
+      { status: 401 }
+    );
   }
 
   const isValid = amcatSession.refreshToken === refreshToken;
@@ -86,7 +96,10 @@ export async function refreshTokenRequest(
     // If token is not valid nor the previous token, kill the entire session. This way
     // if a refresh token was stolen, the legitimate user will break the session
     await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
-    return res.status(401).send({ message: "Invalid refreshtoken request" });
+    return NextResponse.json(
+      { message: "Invalid refreshtoken request" },
+      { status: 401 }
+    );
   }
 
   if (amcatSession.refreshRotate) {
@@ -112,10 +125,10 @@ export async function refreshTokenRequest(
   if (amcatSession.type === "browser") {
     const expirationDate = amcatSession.expires;
     const minExpiration = new Date(
-      Date.now() + 1000 * 60 * 60 * settings.browser.session_min_expire_hours
+      Date.now() + 1000 * 60 * 60 * settings.browser.session_update_age_hours
     );
     const maxExpiration = new Date(
-      Date.now() + 1000 * 60 * 60 * settings.browser.session_max_expire_hours
+      Date.now() + 1000 * 60 * 60 * settings.browser.session_max_age_hours
     );
 
     if (expirationDate < minExpiration || expirationDate > maxExpiration) {
@@ -123,20 +136,18 @@ export async function refreshTokenRequest(
         .update(amcatSessions)
         .set({
           expires: new Date(
-            Date.now() +
-              1000 * 60 * 60 * settings.browser.session_max_expire_hours
+            Date.now() + 1000 * 60 * 60 * settings.browser.session_max_age_hours
           ),
         })
         .where(eq(amcatSessions.id, amcatSession.id));
     }
   }
 
-  await createTokens(res, req, amcatSession, user);
+  await createTokens(host, amcatSession, user);
 }
 
 export async function createTokens(
-  res: NextApiResponse,
-  req: NextApiRequest,
+  host: string,
   amcatSession: InferSelectModel<typeof amcatSessions>,
   user: InferSelectModel<typeof users>
 ) {
@@ -144,7 +155,6 @@ export async function createTokens(
   const { email, name, image } = user;
 
   // middlecat should always be on https, but exception for localhost
-  const host = req.headers.host || "";
   const protocol = /^localhost/.test(host) ? "http://" : "https://";
   const middlecat = protocol + host;
 
@@ -171,21 +181,21 @@ export async function createTokens(
   const refresh_token = amcatSession.id + "." + amcatSession.refreshToken;
   const refresh_rotate = amcatSession.refreshRotate;
 
-  res.status(200).json({
-    token_type: "bearer",
-    access_token,
-    refresh_token,
-    refresh_rotate,
-    expires_in,
-  });
+  return NextResponse.json(
+    {
+      token_type: "bearer",
+      access_token,
+      refresh_token,
+      refresh_rotate,
+      expires_in,
+    },
+    { status: 200 }
+  );
 }
 
-export async function killSessionRequest(
-  res: NextApiResponse,
-  req: NextApiRequest
-) {
-  const refreshToken = req.body.refresh_token;
-  const [sessionId] = refreshToken.split(".");
+export async function killSessionRequest(sessionId: string) {
+  //const body = req.body || {};
+  //const [sessionId] = body.refreshToken.split(".");
 
   const [amcatSession] = await db
     .select()
@@ -195,7 +205,13 @@ export async function killSessionRequest(
 
   if (amcatSession) {
     await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));
-    return res.status(201).send({ message: "Session killed (yay)" });
+    return NextResponse.json(
+      { message: "Session killed (yay)" },
+      { status: 200 }
+    );
   }
-  return res.status(401).send({ message: "Invalid kill request" });
+  return NextResponse.json(
+    { message: "Invalid kill request" },
+    { status: 401 }
+  );
 }

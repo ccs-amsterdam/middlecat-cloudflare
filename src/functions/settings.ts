@@ -7,10 +7,13 @@
 
 const settings = {
   browser: {
-    session_min_expire_hours: 24 * 7,
-    session_max_expire_hours: 24 * 14,
+    session_max_age_hours: 24 * 14,
+    session_update_age_hours: 24 * 7,
     access_expire_minutes: 10,
   },
-  api: { access_expire_minutes: 60 * 3 },
+  apiKey: {
+    session_max_age_hours: 24 * 365,
+    access_expire_minutes: 60,
+  },
 };
 export default settings;

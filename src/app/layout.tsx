@@ -1,15 +1,22 @@
-"use client";
-
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
 import Header from "@/components/Header";
+import StyledJsxRegistry from "./registry";
+import { Metadata } from "next";
 
 const font = Poppins({
   weight: "500",
   subsets: ["devanagari"],
   display: "swap",
 });
+
+export const runtime = "edge";
+
+export const metadata: Metadata = {
+  title: "MiddleCat",
+  description: "cat-in-the-middle authentication",
+};
 
 export default function RootLayout({
   children,
@@ -19,8 +26,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={font.className}>
-        <Header />
-        <ClientProviders>{children}</ClientProviders>
+        <StyledJsxRegistry>
+          <Header />
+          <ClientProviders>{children}</ClientProviders>
+        </StyledJsxRegistry>
       </body>
     </html>
   );

@@ -9,8 +9,6 @@ export const runtime = "edge";
 
 export async function GET() {
   const session = await auth();
-  console.log(session);
-
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Need to be signed in" },
@@ -39,7 +37,7 @@ export async function GET() {
         resource,
         id,
       });
-    if (s.type === "api")
+    if (s.type === "apiKey")
       apiKey.push({ label, createdOn, createdAt, resource, expires, id });
   }
 

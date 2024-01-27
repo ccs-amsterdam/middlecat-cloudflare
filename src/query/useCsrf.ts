@@ -13,7 +13,6 @@ export default function useCsrf() {
 }
 
 async function fetchCsrf() {
-  console.log("fetching csrf token");
   const res = await fetch("/api/auth/csrf");
   const data: csrfResponse = await res.json();
   return data.csrfToken;

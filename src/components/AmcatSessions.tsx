@@ -44,12 +44,12 @@ export default function AmcatSessions({ session }: props) {
     return res.json();
   }
 
-  if (isLoading) <Loading msg="Loading sessions..." />;
+  if (isLoading) <Loading />;
   if (!session) return null;
   if (!sessionData) return <ErrorMsg>Could not fetch sessions</ErrorMsg>;
 
   return (
-    <div className="SessionData">
+    <div className="SessionData fadeIn">
       <style jsx>{`
         .SessionData {
           display: flex;
@@ -57,11 +57,11 @@ export default function AmcatSessions({ session }: props) {
           gap: 2rem;
           color: white;
           padding: 2rem;
+          margin-top: 2rem;
         }
         .AmcatSessions {
           flex: 1 1 auto;
-          width: 100%;
-          min-width: 50%;
+
           text-align: center;
           border: 1px solid var(--primary);
           border-radius: 1rem;
