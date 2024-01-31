@@ -16,6 +16,7 @@ export default function Home() {
       <style jsx>{`
         .Login {
           margin: 2rem auto;
+          padding: 1rem 1rem;
           width: 100%;
           position: relative;
           display: flex;
@@ -36,10 +37,7 @@ export default function Home() {
       <div>
         <div className="">
           <h2 className="text-center">Sessions and API keys</h2>
-          <p>
-            On this page you can see and manage your active MiddleCat sessions
-            and API keys.
-          </p>
+          <p>On this page you can see and manage your active MiddleCat sessions and API keys.</p>
 
           <div className="SignIn">
             {session?.user ? (

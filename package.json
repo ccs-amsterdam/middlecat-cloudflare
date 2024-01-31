@@ -26,7 +26,7 @@
     "@cloudflare/workers-types": "^4.20231121.0",
     "@tanstack/react-query": "^5.14.1",
     "drizzle-orm": "^0.29.0",
-    "jsonwebtoken": "^9.0.2",
+    "jose": "^5.2.0",
     "next": "14.0.3",
     "next-auth": "^5.0.0-beta.4",
     "react": "^18",
@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.8.5",
-    "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

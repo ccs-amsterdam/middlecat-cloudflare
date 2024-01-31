@@ -5,13 +5,7 @@ import { FaClipboard, FaWindowClose } from "react-icons/fa";
 import copyToClipboard from "../functions/copyToClipboard";
 import getResourceConfig from "../functions/getResourceConfig";
 
-export default function CreateApiKey({
-  csrfToken,
-  fetchSessions,
-}: {
-  csrfToken: string;
-  fetchSessions: () => void;
-}) {
+export default function CreateApiKey({ csrfToken, fetchSessions }: { csrfToken: string; fetchSessions: () => void }) {
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<string>();
 
@@ -32,29 +26,19 @@ export default function CreateApiKey({
         {token ? (
           <ShowAPIKey token={token} finish={finish} />
         ) : (
-          <CreateKeyForm
-            csrfToken={csrfToken}
-            createdToken={createdToken}
-            finish={finish}
-          />
+          <CreateKeyForm csrfToken={csrfToken} createdToken={createdToken} finish={finish} />
         )}
       </Modal>
     </div>
   );
 }
 
-function Modal({
-  children,
-  visible,
-}: {
-  children: React.ReactNode;
-  visible: boolean;
-}) {
+function Modal({ children, visible }: { children: React.ReactNode; visible: boolean }) {
   return (
-    <div className="modal">
+    <div className="modal" style={{ display: visible ? "flex" : "none" }}>
       <style jsx>{`
         .modal {
-          display: ${visible ? "flex" : "none"};
+          display: "flex";
           position: fixed;
           top: 0;
           left: 0;
@@ -81,11 +65,11 @@ function Modal({
         @keyframes slideIn {
           from {
             opacity: 0;
-            transform: translateY(100%);
+            transform: translateY(-30%) scale(0.1);
           }
           to {
             opacity: 1;
-            transform: translateY(0%);
+            transform: translateY(0%) scale(1);
           }
         }
       `}</style>
@@ -157,8 +141,7 @@ function ShowAPIKey({ token, finish }: { token: string; finish: () => void }) {
       <button onClick={() => finish()}>Hide token</button>
 
       <p>
-        *MiddleCat API keys are refresh tokens. If you are not using an existing
-        client, see{" "}
+        *MiddleCat API keys are refresh tokens. If you are not using an existing client, see{" "}
         <a
           href="https://github.com/ccs-amsterdam/middlecat#building-new-clients-r-python-etc"
           target="_blank"
@@ -192,14 +175,23 @@ function CreateKeyForm({
 
     const expires = new Date(String(formData.get("expires_date") || ""));
     const resource = formData.get("resource") as string;
-    const resourceConfig = await getResourceConfig(resource);
+
+    try {
+      const resourceConfig = await getResourceConfig(resource);
+      if (resourceConfig.middlecat_url !== process.env.NEXTAUTH_URL) {
+        setError(`Server users a different MiddleCat: ${resourceConfig.middlecat_url}`);
+        return;
+      }
+    } catch (e) {
+      setError(`Could not get server config (${resource.replace(/\/$/, "")})/config`);
+      return;
+    }
 
     const body = {
       csrfToken,
       resource,
-      resourceConfig,
       label: formData.get("label"),
-      clientId: formData.get("label"),
+      clientId: "API_KEY",
       refreshRotate: !!formData.get("rotating"),
       type: "apiKey",
       oauth: false,
@@ -267,6 +259,7 @@ function CreateKeyForm({
           border-radius: 5px;
           padding: 0rem 1rem;
           text-align: center;
+          max-width: 100px;
         }
 
         button {

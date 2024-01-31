@@ -39,9 +39,8 @@ export default function AmcatSessions({ session }: props) {
     };
 
     const res = await fetch(`/api/closeSessions`, config);
-    if (!res.ok) throw new Error("Could not close sessions");
-    queryClient.invalidateQueries({ queryKey: ["sessions"] });
-    return res.json();
+    if (res.ok) queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    //return res.json();
   }
 
   if (isLoading) <Loading />;
@@ -56,57 +55,69 @@ export default function AmcatSessions({ session }: props) {
           flex-wrap: wrap;
           gap: 2rem;
           color: white;
-          padding: 2rem;
+          padding: 1rem;
           margin-top: 2rem;
         }
-        .AmcatSessions {
+        .SessionContainer {
           flex: 1 1 auto;
-
+          width: 50rem;
+          max-width: 90vw;
+          padding: 1rem 2rem;
           text-align: center;
           border: 1px solid var(--primary);
           border-radius: 1rem;
           box-shadow: 0px 1px 10px 0px var(--primary);
         }
+        :global(.AmcatSession) {
+          display: flex;
+          align-items: center;
+          margin: 0.5rem 0;
+          border: 1px solid var(--primary);
+          padding: 0.3rem 0.6rem;
+          border-radius: 0.5rem;
+        }
+        :global(.AmcatSession .Details) {
+          flex: 1 1 auto;
+          width: 100%;
+          white-space: nowrap;
+          text-align: left;
+          overflow: ellipsis;
+        }
+        :global(.AmcatSession .Context) {
+          color: var(--primary);
+          font-style: italic;
+        }
+        :global(.AmcatSession .Buttons) {
+          display: flex;
+          gap: 0.3rem;
+        }
+        :global(.AmcatSession button) {
+          display: flex;
+          white-space: nowrap;
+          margin: 0;
+          font-size: 1rem;
+        }
       `}</style>
 
-      <div className="AmcatSessions">
+      <div className="SessionContainer">
         <div className="Header">
           <h2>Browser sessions</h2>
-          <h4 className="PrimaryColor">
-            Monitor connections across browsers and devices
-          </h4>
-          {sessionData?.browser?.length ? null : (
-            <h4>- No active sessions -</h4>
-          )}
+          <h4 className="PrimaryColor">Monitor connections across browsers and devices</h4>
+          {sessionData?.browser?.length ? null : <h4>- No active sessions -</h4>}
         </div>
         {sessionData.browser.map((session) => {
-          return (
-            <BrowserSessionRow
-              key={session.id}
-              session={session}
-              closeSessions={closeSessions}
-            />
-          );
+          return <BrowserSessionRow key={session.id} session={session} closeSessions={closeSessions} />;
         })}
       </div>
-      <div className="AmcatSessions">
+      <div className="SessionContainer">
         <div className="Header">
           <h2>API Keys</h2>
           <h4 className="SecondaryColor">Manage and create API keys</h4>
           {sessionData?.apiKey?.length ? null : <h4>- No active API Keys -</h4>}
         </div>
-        <CreateApiKey
-          csrfToken={csrfToken || ""}
-          fetchSessions={fetchSessions}
-        />
+        <CreateApiKey csrfToken={csrfToken || ""} fetchSessions={fetchSessions} />
         {sessionData.apiKey.map((session) => {
-          return (
-            <ApiKeySessionRow
-              key={session.id}
-              session={session}
-              closeSessions={closeSessions}
-            />
-          );
+          return <ApiKeySessionRow key={session.id} session={session} closeSessions={closeSessions} />;
         })}
       </div>
     </div>
@@ -131,10 +142,7 @@ function BrowserSessionRow({
         <div className="Label">{session.label}</div>
       </div>
       <div className="Buttons">
-        <button
-          className="PrimaryColor"
-          onClick={() => closeSessions([session.id])}
-        >
+        <button className="PrimaryColor" onClick={() => closeSessions([session.id])}>
           close
         </button>
       </div>
@@ -154,17 +162,13 @@ function ApiKeySessionRow({
   session: ApiKeySession;
   closeSessions: (ids: string[]) => void;
 }) {
-  const [expiresIn, setExpiresIn] = useState<number>(
-    calcExpiresIn(session.expires)
-  );
+  const [expiresIn, setExpiresIn] = useState<number>(calcExpiresIn(session.expires));
   const date = new Date(session.createdAt);
 
   const expiresInMinutes = expiresIn / (1000 * 60);
   const threshold = expiresInMinutes > 60 * 24 * 2;
   const expiresInLabel = threshold ? "days" : "minutes";
-  const expiresInValue = threshold
-    ? Math.floor(expiresInMinutes / 60 / 24)
-    : Math.floor(expiresInMinutes);
+  const expiresInValue = threshold ? Math.floor(expiresInMinutes / 60 / 24) : Math.floor(expiresInMinutes);
 
   useEffect(() => {
     const expiresIn = calcExpiresIn(session.expires);
@@ -176,17 +180,18 @@ function ApiKeySessionRow({
   return (
     <div className={`AmcatSession`}>
       <div className="Details">
+        <div className="Label">{session.label}</div>
         <div className="Context">
           {date.toDateString()} - {session.createdOn}
         </div>
-        <div className="Label">{session.label}</div>
       </div>
       <div className="Buttons">
         <Popup
           trigger={
             <button>
-              <div style={{ minWidth: "4rem" }}>{expiresInValue}</div>
-              <div>{expiresInLabel}</div>
+              <span>
+                {expiresInValue} {expiresInLabel}
+              </span>
             </button>
           }
         >
@@ -194,16 +199,7 @@ function ApiKeySessionRow({
         </Popup>
         <Popup trigger={<button>delete</button>}>
           <h4>Are you certain?</h4>
-          <button
-            style={{
-              borderColor: "var(--secondary)",
-              color: "white",
-              fontSize: "1.3rem",
-            }}
-            onClick={() => closeSessions([session.id])}
-          >
-            Yes, delete
-          </button>
+          <button onClick={() => closeSessions([session.id])}>Yes, delete</button>
         </Popup>
       </div>
     </div>

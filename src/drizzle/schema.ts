@@ -1,7 +1,7 @@
 import { integer, sqliteTable, text, primaryKey, index } from "drizzle-orm/sqlite-core";
 import type { AdapterAccount } from "@auth/core/adapters";
 import { drizzle } from "drizzle-orm/d1";
-import { randomBytes, randomUUID } from "crypto";
+import hexSecret from "@/functions/hexSecret";
 
 // AUTH TABLES
 
@@ -60,7 +60,7 @@ export const amcatSessions = sqliteTable(
   {
     id: text("id")
       .primaryKey()
-      .$defaultFn(() => randomUUID()),
+      .$defaultFn(() => crypto.randomUUID()),
 
     // session management
     email: text("email").notNull(),
@@ -70,7 +70,7 @@ export const amcatSessions = sqliteTable(
 
     // authorization code flow
     codeChallenge: text("codeChallenge"),
-    secret: text("secret").$defaultFn(() => randomBytes(64).toString("hex")),
+    secret: text("secret").$defaultFn(() => hexSecret(32)),
     secretExpires: integer("secretExpires", {
       mode: "timestamp_ms",
     }).$defaultFn(() => new Date(Date.now() + 1000 * 60 * 10)), // 10 minutes,

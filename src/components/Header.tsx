@@ -15,7 +15,7 @@ export default function Header() {
           border-bottom: 1px solid var(--primary);
         }
         h2 {
-          font-size: 5rem;
+          font-size: clamp(2rem, 17vw, 5rem);
           line-height: 5rem;
           font-weight: bold;
           margin-bottom: 0;

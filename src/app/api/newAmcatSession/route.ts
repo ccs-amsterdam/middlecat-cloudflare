@@ -7,6 +7,7 @@ import db, { amcatSessions, users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 const bodySchema = z.object({
+  csrfToken: z.string(),
   clientId: z.string().max(200),
   state: z.string().optional(),
   codeChallenge: z.string().max(128).optional(),
@@ -16,11 +17,6 @@ const bodySchema = z.object({
   refreshRotate: z.boolean().optional().default(true),
   expiresIn: z.number().optional(),
   resource: z.string().max(200),
-  resourceConfig: z.object({
-    middlecat_url: z.string(),
-    amcat_url: z.string(),
-    amcat_key: z.string(),
-  }),
   oauth: z.boolean().optional().default(true),
 });
 
@@ -36,33 +32,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Need to be signed in" }, { status: 403 });
   }
 
-  // TODO csrf check
-
-  const bodyValidator = bodySchema.safeParse(req.body);
+  const bodyValidator = bodySchema.safeParse(await req.json());
   if (!bodyValidator.success) {
     return NextResponse.json({ error: "Invalid request body", zod: bodyValidator.error }, { status: 400 });
   }
-  const {
-    clientId,
-    state,
-    codeChallenge,
-    label,
-    type,
-    scope,
-    refreshRotate,
-    expiresIn,
-    resource,
-    resourceConfig,
-    oauth = true,
-  } = bodyValidator.data;
+  const { csrfToken, clientId, state, codeChallenge, label, type, scope, refreshRotate, expiresIn, resource, oauth } =
+    bodyValidator.data;
 
   if (oauth && (!codeChallenge || !state)) {
     return NextResponse.json({ status: 404 });
   }
 
-  if (resourceConfig.middlecat_url !== process.env.NEXTAUTH_URL) {
-    return NextResponse.json({ error: "Resource uses a different MiddleCat" }, { status: 404 });
-  }
+  console.log(csrfToken);
+  // TODO csrf check
 
   const maxAge = expiresIn || settings[type].session_max_age_hours * 60 * 60;
   const expires = new Date(Date.now() + 1000 * maxAge);
