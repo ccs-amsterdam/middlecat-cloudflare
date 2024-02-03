@@ -5,6 +5,7 @@ import { z } from "zod";
 import { NextResponse, userAgent } from "next/server";
 import db, { amcatSessions, users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 
 const bodySchema = z.object({
   csrfToken: z.string(),
@@ -27,6 +28,8 @@ const bodySchema = z.object({
  */
 export async function POST(req: Request) {
   const session = await auth();
+  const cookieStore = cookies();
+
   const email = session?.user?.email;
   if (!email) {
     return NextResponse.json({ error: "Need to be signed in" }, { status: 403 });
@@ -44,6 +47,8 @@ export async function POST(req: Request) {
   }
 
   console.log(csrfToken);
+  console.log(cookieStore.get("authjs.csrf-token"));
+
   // TODO csrf check
 
   const maxAge = expiresIn || settings[type].session_max_age_hours * 60 * 60;
@@ -68,7 +73,8 @@ export async function POST(req: Request) {
   } else {
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-    return await createTokens(req.headers.get("host") || "", amcatsession, user);
+    const responseBody = await createTokens(amcatsession, user);
+    return NextResponse.json(responseBody, { status: 200 });
   }
 }
 

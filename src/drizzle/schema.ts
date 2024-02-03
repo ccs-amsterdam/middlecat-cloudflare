@@ -86,7 +86,7 @@ export const amcatSessions = sqliteTable(
 
     // refresh token
     refreshRotate: integer("refreshRotate", { mode: "boolean" }).notNull(),
-    refreshToken: text("refreshToken"),
+    refreshToken: text("refreshToken").$defaultFn(() => hexSecret(32)),
     refreshPrevious: text("refreshPrevious"),
   },
   (table) => ({

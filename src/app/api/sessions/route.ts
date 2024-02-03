@@ -10,10 +10,7 @@ export const runtime = "edge";
 export async function GET() {
   const session = await auth();
   if (!session?.user?.email) {
-    return NextResponse.json(
-      { error: "Need to be signed in" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Need to be signed in" }, { status: 403 });
   }
 
   await rmExpiredSessions();
@@ -37,8 +34,7 @@ export async function GET() {
         resource,
         id,
       });
-    if (s.type === "apiKey")
-      apiKey.push({ label, createdOn, createdAt, resource, expires, id });
+    if (s.type === "apiKey") apiKey.push({ label, createdOn, createdAt, resource, expires, id });
   }
 
   return NextResponse.json({ browser, apiKey }, { status: 200 });

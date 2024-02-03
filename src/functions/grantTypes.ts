@@ -2,11 +2,10 @@ import { createAccessToken } from "./createJWT";
 import db, { amcatSessions, users } from "@/drizzle/schema";
 import settings from "./settings";
 import { InferSelectModel, and, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
 import hexSecret from "./hexSecret";
 import createCodeChallenge from "./createCodeChallenge";
 
-export async function authorizationCodeRequest(host: string, code: string, codeVerifier: string) {
+export async function authorizationCodeRequest(code: string, codeVerifier: string) {
   // validate the authorization code grant, and if pass create
   // the access token and refresh token
 
@@ -25,7 +24,7 @@ export async function authorizationCodeRequest(host: string, code: string, codeV
 
   if (!amcatSession || !user || !amcatSession.secret) {
     // if amcatSession doesn't have a secret, it means it doesn't use oauth
-    return NextResponse.json({ message: "Invalid token request" }, { status: 404 });
+    throw new Error("Invalid token request");
   }
 
   if (
@@ -39,17 +38,17 @@ export async function authorizationCodeRequest(host: string, code: string, codeV
     // - If the secret expired, the amcatSession can never be started anyway
 
     await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));
-    return NextResponse.json({ message: "Invalid token request" }, { status: 401 });
+    throw new Error("Invalid token request");
   }
 
   // authorization code has now been validated. We remove the secret stuff
   // to indicate that it can no longer be used.
   await db.update(amcatSessions).set({ secretExpires: null }).where(eq(amcatSessions.id, amcatSession.id));
 
-  await createTokens(host, amcatSession, user);
+  return await createTokens(amcatSession, user);
 }
 
-export async function refreshTokenRequest(host: string, sessionId: string, refreshToken: string) {
+export async function refreshTokenRequest(sessionId: string, refreshToken: string) {
   // the refresh token that the client receives is actually the session id + refresh token
   //const [sessionId, refreshToken] = refresh_token.split(".");
 
@@ -62,7 +61,7 @@ export async function refreshTokenRequest(host: string, sessionId: string, refre
 
   if (!amcatSession || !user || amcatSession.expires < new Date(Date.now())) {
     if (amcatSession) await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
-    return NextResponse.json({ message: "Invalid refreshtoken request" }, { status: 401 });
+    throw new Error("Invalid refreshtoken request");
   }
 
   const isValid = amcatSession.refreshToken === refreshToken;
@@ -72,7 +71,7 @@ export async function refreshTokenRequest(host: string, sessionId: string, refre
     // If token is not valid nor the previous token, kill the entire session. This way
     // if a refresh token was stolen, the legitimate user will break the session
     await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
-    return NextResponse.json({ message: "Invalid refreshtoken request" }, { status: 401 });
+    throw new Error("Invalid refreshtoken request");
   }
 
   if (amcatSession.refreshRotate) {
@@ -81,7 +80,6 @@ export async function refreshTokenRequest(host: string, sessionId: string, refre
     const usedToken = isPrevious ? amcatSession.refreshPrevious : amcatSession.refreshToken;
     amcatSession.refreshToken = hexSecret(32);
 
-    console.log(amcatSession);
     await db
       .update(amcatSessions)
       .set({
@@ -109,20 +107,17 @@ export async function refreshTokenRequest(host: string, sessionId: string, refre
     }
   }
 
-  await createTokens(host, amcatSession, user);
+  await createTokens(amcatSession, user);
 }
 
 export async function createTokens(
-  host: string,
   amcatSession: InferSelectModel<typeof amcatSessions>,
   user: InferSelectModel<typeof users>
 ) {
   const { clientId, resource } = amcatSession;
   const { email, name, image } = user;
 
-  // middlecat should always be on https, but exception for localhost
-  const protocol = /^localhost/.test(host) ? "http://" : "https://";
-  const middlecat = protocol + host;
+  const middlecat = process.env.NEXTAUTH_URL || "";
 
   // expire access tokens
   // (exp seems to commonly be in seconds)
@@ -148,16 +143,13 @@ export async function createTokens(
   const refresh_token = amcatSession.id + "." + amcatSession.refreshToken;
   const refresh_rotate = amcatSession.refreshRotate;
 
-  return NextResponse.json(
-    {
-      token_type: "bearer",
-      access_token,
-      refresh_token,
-      refresh_rotate,
-      expires_in,
-    },
-    { status: 200 }
-  );
+  return {
+    token_type: "bearer",
+    access_token,
+    refresh_token,
+    refresh_rotate,
+    expires_in,
+  };
 }
 
 export async function killSessionRequest(sessionId: string) {
@@ -168,7 +160,7 @@ export async function killSessionRequest(sessionId: string) {
 
   if (amcatSession) {
     await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));
-    return NextResponse.json({ message: "Session killed (yay)" }, { status: 200 });
+    return { message: "Session killed (yay)" };
   }
-  return NextResponse.json({ message: "Invalid kill request" }, { status: 401 });
+  throw new Error("Invalid kill request");
 }

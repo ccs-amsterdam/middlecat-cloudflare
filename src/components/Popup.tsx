@@ -31,14 +31,14 @@ function Popup({ trigger, children, style }: Props) {
 
       popup.style["max-height"] = "95vh";
       popup.style.padding = "0.5rem 0.5rem";
-      popup.style.border = "1px solid black";
+      popup.style.border = "1px solid var(--primary)";
       popup.style.top = top + "px";
       popup.style.left = left + "px";
       popup.style.opacity = 1;
     } else {
       popup.style["max-height"] = "0px";
       popup.style.padding = "0rem 0.5rem";
-      popup.style.border = "0px solid black";
+      popup.style.border = "0px solid var(--primary)";
       popup.style.opacity = 0;
     }
   }, [open]);
@@ -62,15 +62,14 @@ function Popup({ trigger, children, style }: Props) {
         .popup {
           transition: opacity 0.1s;
           overflow: auto;
-          color: white;
           position: fixed;
-          border: 0px solid black;
+          border: 0px solid var(--primary);
           max-height: 0px;
           min-width: min(25rem, 80vw);
           max-width: 80vw;
           padding: 0rem 0.5rem;
           border-radius: 1rem;
-          background: var(--secondary);
+          background: var(--background);
           opacity: 0;
         }
         .cancel {

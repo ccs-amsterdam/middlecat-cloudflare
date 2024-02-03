@@ -1,11 +1,13 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { FaClipboard, FaWindowClose } from "react-icons/fa";
 import copyToClipboard from "../functions/copyToClipboard";
 import getResourceConfig from "../functions/getResourceConfig";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function CreateApiKey({ csrfToken, fetchSessions }: { csrfToken: string; fetchSessions: () => void }) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<string>();
 
@@ -17,6 +19,7 @@ export default function CreateApiKey({ csrfToken, fetchSessions }: { csrfToken: 
   function finish() {
     setToken(undefined);
     setOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["sessions"] });
   }
 
   return (
@@ -35,7 +38,7 @@ export default function CreateApiKey({ csrfToken, fetchSessions }: { csrfToken: 
 
 function Modal({ children, visible }: { children: React.ReactNode; visible: boolean }) {
   return (
-    <div className="modal" style={{ display: visible ? "flex" : "none" }}>
+    <div>
       <style jsx>{`
         .modal {
           display: "flex";
@@ -47,7 +50,6 @@ function Modal({ children, visible }: { children: React.ReactNode; visible: bool
           background: #222d;
           z-index: 100;
           justify-content: center;
-          transition: background-color 0.5s;
           align-items: center;
         }
         .modal-content {
@@ -73,7 +75,9 @@ function Modal({ children, visible }: { children: React.ReactNode; visible: bool
           }
         }
       `}</style>
-      <div className="modal-content">{children}</div>
+      <div className="modal fadeIn" style={{ display: visible ? "flex" : "none" }}>
+        <div className="modal-content">{children}</div>
+      </div>
     </div>
   );
 }
@@ -106,8 +110,10 @@ function ShowAPIKey({ token, finish }: { token: string; finish: () => void }) {
           overflow: auto;
           white-space: pre-wrap;
           word-wrap: break-word;
+          word-break: break-all;
+          text-align: justify;
           margin: 0;
-          font-size: 1.25rem;
+          font-size: 0.879rem;
           max-width: 20rem;
         }
         .copy {
@@ -178,12 +184,13 @@ function CreateKeyForm({
 
     try {
       const resourceConfig = await getResourceConfig(resource);
-      if (resourceConfig.middlecat_url !== process.env.NEXTAUTH_URL) {
+      const thisMiddlecat = window.location.origin;
+      if (resourceConfig.middlecat_url !== thisMiddlecat) {
         setError(`Server users a different MiddleCat: ${resourceConfig.middlecat_url}`);
         return;
       }
     } catch (e) {
-      setError(`Could not get server config (${resource.replace(/\/$/, "")})/config`);
+      setError(`Could not get server config`);
       return;
     }
 
@@ -219,6 +226,9 @@ function CreateKeyForm({
   return (
     <>
       <style jsx>{`
+        form {
+          max-width: 25rem;
+        }
         .field {
           margin-bottom: 1.5rem;
           text-align: center;
@@ -259,7 +269,6 @@ function CreateKeyForm({
           border-radius: 5px;
           padding: 0rem 1rem;
           text-align: center;
-          max-width: 100px;
         }
 
         button {

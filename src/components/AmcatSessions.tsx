@@ -29,18 +29,24 @@ export default function AmcatSessions({ session }: props) {
   const { data: csrfToken } = useCsrf();
 
   async function closeSessions(amcatSessionIds: string[]) {
-    const config = {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ amcatSessionIds, csrfToken }),
-    };
+    let anyChanged = false;
+    function killSession(session_id: string) {
+      return fetch(`/api/token`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ grant_type: "kill_session", session_id: session_id }),
+      });
+    }
 
-    const res = await fetch(`/api/closeSessions`, config);
-    if (res.ok) queryClient.invalidateQueries({ queryKey: ["sessions"] });
-    //return res.json();
+    for (const session_id of amcatSessionIds) {
+      const res = await killSession(session_id);
+      if (res.ok) anyChanged = true;
+    }
+
+    if (anyChanged) queryClient.invalidateQueries({ queryKey: ["sessions"] });
   }
 
   if (isLoading) <Loading />;
