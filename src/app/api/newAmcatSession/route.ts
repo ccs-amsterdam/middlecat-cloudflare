@@ -6,6 +6,7 @@ import { NextResponse, userAgent } from "next/server";
 import db, { amcatSessions, users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
+import safeSession from "@/functions/safeSession";
 
 const bodySchema = z.object({
   csrfToken: z.string(),
@@ -27,14 +28,6 @@ const bodySchema = z.object({
  * Otherwise, immediately returns the tokens
  */
 export async function POST(req: Request) {
-  const session = await auth();
-  const cookieStore = cookies();
-
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json({ error: "Need to be signed in" }, { status: 403 });
-  }
-
   const bodyValidator = bodySchema.safeParse(await req.json());
   if (!bodyValidator.success) {
     return NextResponse.json({ error: "Invalid request body", zod: bodyValidator.error }, { status: 400 });
@@ -42,12 +35,12 @@ export async function POST(req: Request) {
   const { csrfToken, clientId, state, codeChallenge, label, type, scope, refreshRotate, expiresIn, resource, oauth } =
     bodyValidator.data;
 
+  const { email, error } = await safeSession(csrfToken);
+  if (!email) return NextResponse.json(error);
+
   if (oauth && (!codeChallenge || !state)) {
     return NextResponse.json({ status: 404 });
   }
-
-  console.log(csrfToken);
-  console.log(cookieStore.get("authjs.csrf-token"));
 
   // TODO csrf check
 

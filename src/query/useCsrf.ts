@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { z } from "zod";
 
-interface csrfResponse {
-  csrfToken: string;
-}
+const csrfSchema = z.object({
+  csrfToken: z.string(),
+});
 
 export default function useCsrf() {
   return useQuery({
@@ -12,8 +13,8 @@ export default function useCsrf() {
   });
 }
 
-async function fetchCsrf() {
+export async function fetchCsrf() {
   const res = await fetch("/api/auth/csrf");
-  const data: csrfResponse = await res.json();
-  return data.csrfToken;
+  const data = await res.json();
+  return csrfSchema.parse(data).csrfToken;
 }
