@@ -89,6 +89,15 @@ button:hover:enabled {
   }
 }
 
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .fadeIn {
   animation-name: fadeInFrames;
   animation-duration: 0.5s;
@@ -103,12 +112,12 @@ button:hover:enabled {
 .Loading::after {
   content: "";
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  border: 10px solid #f3f3f3;
-  border-top: 10px solid var(--primary);
+  top: 0.4rem;
+  left: 0.4rem;
+  border: 7px solid #f3f3f3;
+  border-top: 7px solid var(--primary);
   border-radius: 50%;
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   animation: spin 1s linear infinite;
 }

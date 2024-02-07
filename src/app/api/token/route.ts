@@ -9,9 +9,8 @@ const corsHeaders = {
 
 const authorizationCodeSchema = z.object({
   grant_type: z.literal("authorization_code"),
-  host: z.string(),
   code: z.string(),
-  codeVerifier: z.string(),
+  code_verifier: z.string(),
 });
 
 const refreshTokenSchema = z.object({
@@ -25,20 +24,20 @@ const killSessionSchema = z.object({
   session_id: z.string().optional(),
 });
 
-const bodySchema = z.union([authorizationCodeSchema, refreshTokenSchema, killSessionSchema]);
+const bodySchema = z.discriminatedUnion("grant_type", [authorizationCodeSchema, refreshTokenSchema, killSessionSchema]);
 
 export async function POST(req: Request) {
   const bodyValidator = bodySchema.safeParse(await req.json());
 
   if (!bodyValidator.success) {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request body", zod: bodyValidator.error }, { status: 400 });
   }
   const body = bodyValidator.data;
 
   try {
     let responseBody: any = undefined;
     if (body.grant_type === "authorization_code") {
-      responseBody = await authorizationCodeRequest(body.code, body.codeVerifier);
+      responseBody = await authorizationCodeRequest(body.code, body.code_verifier);
     }
 
     if (body.grant_type === "refresh_token") {

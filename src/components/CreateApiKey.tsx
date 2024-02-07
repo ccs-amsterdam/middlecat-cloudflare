@@ -118,18 +118,20 @@ function ShowAPIKey({ token, finish }: { token: string; finish: () => void }) {
         }
         .copy {
           display: flex;
+          align-items: center;
           gap: 1rem;
           padding: 0.5rem;
           cursor: pointer;
         }
         button {
           margin-top: 2rem;
+          border: 1px solid var(--primary);
         }
         a {
           color: var(--primary);
         }
       `}</style>
-      <h4>Your new API Key*</h4>
+      <h4>Your new API Key</h4>
 
       <p>You will only see this once, so copy it!</p>
       <pre>{token}</pre>
@@ -144,19 +146,7 @@ function ShowAPIKey({ token, finish }: { token: string; finish: () => void }) {
         <FaClipboard size="2rem" color="var(--primary)" />
         <div>{copied ? "copied!" : "click to copy"}</div>
       </div>
-      <button onClick={() => finish()}>Hide token</button>
-
-      <p>
-        *MiddleCat API keys are refresh tokens. If you are not using an existing client, see{" "}
-        <a
-          href="https://github.com/ccs-amsterdam/middlecat#building-new-clients-r-python-etc"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          the docs
-        </a>
-        .
-      </p>
+      <button onClick={() => finish()}>Close window </button>
     </div>
   );
 }

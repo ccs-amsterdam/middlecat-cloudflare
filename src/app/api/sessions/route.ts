@@ -1,8 +1,7 @@
 import { BrowserSession, ApiKeySession } from "@/types";
-import rmExpiredSessions from "@/functions/rmExpiredSessions";
 import { auth } from "@/auth/auth";
 import { NextResponse } from "next/server";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import db, { amcatSessions } from "@/drizzle/schema";
 
 export const runtime = "edge";
@@ -10,15 +9,13 @@ export const runtime = "edge";
 export async function GET() {
   const session = await auth();
   if (!session?.user?.email) {
-    return NextResponse.json({ error: "Need to be signed in" }, { status: 403 });
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
-
-  await rmExpiredSessions();
 
   const aSessions = await db
     .select()
     .from(amcatSessions)
-    .where(eq(amcatSessions.email, session.user.email))
+    .where(and(eq(amcatSessions.email, session.user.email), gt(amcatSessions.expires, new Date())))
     .orderBy(asc(amcatSessions.expires));
 
   const browser: BrowserSession[] = [];

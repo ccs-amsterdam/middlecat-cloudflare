@@ -1,12 +1,12 @@
 import settings from "@/functions/settings";
 import { createTokens } from "@/functions/grantTypes";
-import { auth } from "@/auth/auth";
 import { z } from "zod";
 import { NextResponse, userAgent } from "next/server";
 import db, { amcatSessions, users } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { eq, lt } from "drizzle-orm";
 import safeSession from "@/functions/safeSession";
+import hexSecret from "@/functions/hexSecret";
+import { get } from "http";
 
 const bodySchema = z.object({
   csrfToken: z.string(),
@@ -17,7 +17,7 @@ const bodySchema = z.object({
   type: z.enum(["browser", "apiKey"]),
   scope: z.string().max(100).optional().default("default"),
   refreshRotate: z.boolean().optional().default(true),
-  expiresIn: z.number().optional(),
+  expiresIn: z.number().nullish(),
   resource: z.string().max(200),
   oauth: z.boolean().optional().default(true),
 });
@@ -28,6 +28,8 @@ const bodySchema = z.object({
  * Otherwise, immediately returns the tokens
  */
 export async function POST(req: Request) {
+  await rmExpiredSessions();
+
   const bodyValidator = bodySchema.safeParse(await req.json());
   if (!bodyValidator.success) {
     return NextResponse.json({ error: "Invalid request body", zod: bodyValidator.error }, { status: 400 });
@@ -35,23 +37,37 @@ export async function POST(req: Request) {
   const { csrfToken, clientId, state, codeChallenge, label, type, scope, refreshRotate, expiresIn, resource, oauth } =
     bodyValidator.data;
 
-  const { email, error } = await safeSession(csrfToken);
-  if (!email) return NextResponse.json(error);
+  const { user, error } = await safeSession(csrfToken);
+  if (!user?.email) return NextResponse.json(error);
+  const { email, name, image } = user;
 
   if (oauth && (!codeChallenge || !state)) {
     return NextResponse.json({ status: 404 });
   }
 
-  // TODO csrf check
-
   const maxAge = expiresIn || settings[type].session_max_age_hours * 60 * 60;
-  const expires = new Date(Date.now() + 1000 * maxAge);
-  const createdOn = getCreatedOn(req);
 
   // finally, create the new session
   const [amcatsession] = await db
     .insert(amcatSessions)
-    .values({ email, type, label, expires, codeChallenge, createdOn, clientId, resource, scope, refreshRotate })
+    .values({
+      type,
+      label,
+      expires: new Date(Date.now() + 1000 * maxAge),
+      codeChallenge,
+      secret: hexSecret(32),
+      secretExpires: new Date(Date.now() + 1000 * 60 * 10), // 10 minutes,
+      email,
+      name,
+      image,
+      createdOn: getCreatedOn(req),
+      createdAt: new Date(),
+      clientId,
+      resource,
+      scope,
+      refreshRotate,
+      refreshToken: hexSecret(32),
+    })
     .onConflictDoNothing()
     .returning();
 
@@ -66,7 +82,7 @@ export async function POST(req: Request) {
   } else {
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-    const responseBody = await createTokens(amcatsession, user);
+    const responseBody = await createTokens(amcatsession);
     return NextResponse.json(responseBody, { status: 200 });
   }
 }
@@ -78,4 +94,12 @@ function getCreatedOn(req: Request) {
   if (useragent.browser.name) createdOnDetails.push(useragent.browser.name);
   if (useragent.os.name) createdOnDetails.push(useragent.os.name);
   return createdOnDetails.join(", ");
+}
+
+async function rmExpiredSessions() {
+  // only needs to happen every now and then, so we do it roughly
+  // once for every 1000 new sessions
+  if (Math.random() > 0.001) return;
+
+  await db.delete(amcatSessions).where(lt(amcatSessions.expires, new Date()));
 }

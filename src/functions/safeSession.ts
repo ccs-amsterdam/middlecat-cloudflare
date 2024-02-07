@@ -10,15 +10,15 @@ import { cookies } from "next/headers";
 export default async function safeSession(csrfToken: string) {
   const session = await auth();
   if (!session?.user?.email) {
-    return { email: undefined, error: "Need to be signed in" };
+    return { user: undefined, error: "Need to be signed in" };
   }
 
   const validCSRF = await verifyCSRF(csrfToken);
   if (!validCSRF) {
-    return { email: undefined, error: "Invalid CSRF token" };
+    return { user: undefined, error: "Invalid CSRF token" };
   }
 
-  return { email: session.user.email, error: undefined };
+  return { user: session.user, error: undefined };
 }
 
 // authjs doesn't expose a function for getting and validating the

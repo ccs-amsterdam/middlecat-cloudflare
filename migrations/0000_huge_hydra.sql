@@ -16,20 +16,22 @@ CREATE TABLE `account` (
 --> statement-breakpoint
 CREATE TABLE `amcatSession` (
 	`id` text PRIMARY KEY NOT NULL,
-	`email` text NOT NULL,
 	`type` text NOT NULL,
 	`label` text NOT NULL,
 	`expires` integer NOT NULL,
-	`secret` text,
-	`secretExpires` integer,
 	`codeChallenge` text,
+	`secret` text NOT NULL,
+	`secretExpires` integer,
+	`email` text NOT NULL,
+	`name` text,
+	`image` text,
 	`createdOn` text NOT NULL,
 	`createdAt` integer NOT NULL,
 	`clientId` text NOT NULL,
 	`resource` text NOT NULL,
 	`scope` text NOT NULL,
 	`refreshRotate` integer NOT NULL,
-	`refreshToken` text,
+	`refreshToken` text NOT NULL,
 	`refreshPrevious` text
 );
 --> statement-breakpoint

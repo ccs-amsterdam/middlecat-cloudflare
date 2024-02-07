@@ -15,14 +15,13 @@ export async function authorizationCodeRequest(code: string, codeVerifier: strin
   // our authorization code is actually the table id + auth code
   const [id, secret] = code.split(".");
 
-  const [{ amcatSession, user }] = await db
+  const [amcatSession] = await db
     .select()
     .from(amcatSessions)
     .where(and(eq(amcatSessions.id, id), eq(amcatSessions.secret, secret)))
-    .leftJoin(users, eq(amcatSessions.email, users.email))
     .limit(1);
 
-  if (!amcatSession || !user || !amcatSession.secret) {
+  if (!amcatSession || !amcatSession.secret) {
     // if amcatSession doesn't have a secret, it means it doesn't use oauth
     throw new Error("Invalid token request");
   }
@@ -45,21 +44,16 @@ export async function authorizationCodeRequest(code: string, codeVerifier: strin
   // to indicate that it can no longer be used.
   await db.update(amcatSessions).set({ secretExpires: null }).where(eq(amcatSessions.id, amcatSession.id));
 
-  return await createTokens(amcatSession, user);
+  return await createTokens(amcatSession);
 }
 
 export async function refreshTokenRequest(sessionId: string, refreshToken: string) {
   // the refresh token that the client receives is actually the session id + refresh token
   //const [sessionId, refreshToken] = refresh_token.split(".");
 
-  const [{ amcatSession, user }] = await db
-    .select()
-    .from(amcatSessions)
-    .where(eq(amcatSessions.id, sessionId))
-    .leftJoin(users, eq(amcatSessions.email, users.email))
-    .limit(1);
+  const [amcatSession] = await db.select().from(amcatSessions).where(eq(amcatSessions.id, sessionId)).limit(1);
 
-  if (!amcatSession || !user || amcatSession.expires < new Date(Date.now())) {
+  if (!amcatSession || amcatSession.expires < new Date(Date.now())) {
     if (amcatSession) await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
     throw new Error("Invalid refreshtoken request");
   }
@@ -107,15 +101,11 @@ export async function refreshTokenRequest(sessionId: string, refreshToken: strin
     }
   }
 
-  await createTokens(amcatSession, user);
+  await createTokens(amcatSession);
 }
 
-export async function createTokens(
-  amcatSession: InferSelectModel<typeof amcatSessions>,
-  user: InferSelectModel<typeof users>
-) {
-  const { clientId, resource } = amcatSession;
-  const { email, name, image } = user;
+export async function createTokens(amcatSession: InferSelectModel<typeof amcatSessions>) {
+  const { email, name, image, clientId, resource } = amcatSession;
 
   const middlecat = process.env.NEXTAUTH_URL || "";
 

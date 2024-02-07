@@ -9,6 +9,7 @@ import useCsrf from "@/query/useCsrf";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loading } from "./Loading";
 import { ErrorMsg } from "./ErrorMsg";
+import { FaClock } from "react-icons/fa";
 
 interface props {
   session: Session | null;
@@ -172,9 +173,8 @@ function ApiKeySessionRow({
   const date = new Date(session.createdAt);
 
   const expiresInMinutes = expiresIn / (1000 * 60);
-  const threshold = expiresInMinutes > 60 * 24 * 2;
-  const expiresInLabel = threshold ? "days" : "minutes";
-  const expiresInValue = threshold ? Math.floor(expiresInMinutes / 60 / 24) : Math.floor(expiresInMinutes);
+  const expiresInValue =
+    expiresInMinutes > 60 * 24 ? minutesToDays(expiresInMinutes) : minutesToTimeFormat(expiresInMinutes);
 
   useEffect(() => {
     const expiresIn = calcExpiresIn(session.expires);
@@ -194,10 +194,9 @@ function ApiKeySessionRow({
       <div className="Buttons">
         <Popup
           trigger={
-            <button>
-              <span>
-                {expiresInValue} {expiresInLabel}
-              </span>
+            <button style={{ display: "flex", gap: "0.4rem" }}>
+              <FaClock />
+              <span>{expiresInValue}</span>
             </button>
           }
         >
@@ -205,9 +204,23 @@ function ApiKeySessionRow({
         </Popup>
         <Popup trigger={<button>delete</button>}>
           <h4>Are you certain?</h4>
-          <button onClick={() => closeSessions([session.id])}>Yes, delete</button>
+          <button onClick={() => closeSessions([session.id])}>
+            <span style={{ width: "100%", textAlign: "center" }}>Yes, delete</span>
+          </button>
         </Popup>
       </div>
     </div>
   );
+}
+
+function minutesToDays(minutes: number) {
+  return Math.floor(minutes / 60 / 24);
+}
+
+function minutesToTimeFormat(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const hourPart = h < 10 ? `0${h}` : `${h}`;
+  const minutePart = m < 10 ? `0${m}` : `${m}`;
+  return `${hourPart}:${minutePart}`;
 }

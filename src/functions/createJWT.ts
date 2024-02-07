@@ -1,4 +1,3 @@
-import jwt, { SignOptions, Secret } from "jsonwebtoken";
 import * as jose from "jose";
 
 interface AccessTokenPayload {
@@ -23,5 +22,5 @@ async function createJWT(payload: Record<string, any>) {
   const pkcs8 = process.env.PRIVATEKEY || "";
   if (!pkcs8 || !payload) return "";
   const privateKey = await jose.importPKCS8(pkcs8, alg);
-  await new jose.SignJWT(payload).setProtectedHeader({ alg }).sign(privateKey);
+  return await new jose.SignJWT(payload).setProtectedHeader({ alg }).sign(privateKey);
 }

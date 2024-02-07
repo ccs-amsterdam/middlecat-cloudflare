@@ -63,34 +63,34 @@ export const amcatSessions = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
 
     // session management
-    email: text("email").notNull(),
     type: text("type", { enum: ["browser", "apiKey"] }).notNull(),
     label: text("label").notNull(),
     expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
 
     // authorization code flow
     codeChallenge: text("codeChallenge"),
-    secret: text("secret").$defaultFn(() => hexSecret(32)),
+    secret: text("secret").notNull(),
     secretExpires: integer("secretExpires", {
       mode: "timestamp_ms",
-    }).$defaultFn(() => new Date(Date.now() + 1000 * 60 * 10)), // 10 minutes,
+    }),
 
     // access token
+    email: text("email").notNull(),
+    name: text("name"),
+    image: text("image"),
     createdOn: text("createdOn").notNull(),
-    createdAt: integer("createdAt", { mode: "timestamp_ms" })
-      .notNull()
-      .$defaultFn(() => new Date(Date.now())),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
     clientId: text("clientId").notNull(),
     resource: text("resource").notNull(),
     scope: text("scope").notNull(),
 
     // refresh token
     refreshRotate: integer("refreshRotate", { mode: "boolean" }).notNull(),
-    refreshToken: text("refreshToken").$defaultFn(() => hexSecret(32)),
+    refreshToken: text("refreshToken").notNull(),
     refreshPrevious: text("refreshPrevious"),
   },
   (table) => ({
-    emailIds: index("email_idx").on(table.email),
+    emailIdx: index("email_idx").on(table.email),
     expiresIdx: index("expires_idx").on(table.expires),
   })
 );
