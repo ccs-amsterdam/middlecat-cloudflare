@@ -13,6 +13,14 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       gcTime: 1000 * 60 * 60 * 24,
       staleTime: 1000 * 60 * 60 * 24,
+      retry: (failureCount: number, e: any) => {
+        if (failureCount >= 2) return false;
+        const unauthorized = e.response?.status == 401;
+        const forbidden = e.response?.status == 403;
+        const zodError = e.name === "ZodError";
+        const doRetry = !zodError && !unauthorized && !forbidden;
+        return doRetry;
+      },
     },
   },
 });

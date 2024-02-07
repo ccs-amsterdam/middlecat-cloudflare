@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     bodyValidator.data;
 
   const { user, error } = await safeSession(csrfToken);
-  if (!user?.email) return NextResponse.json(error);
+  if (!user?.email) return NextResponse.json(error, { status: 401 });
   const { email, name, image } = user;
 
   if (oauth && (!codeChallenge || !state)) {

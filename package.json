@@ -11,13 +11,16 @@
     "dev:ts": "npm run dev & npm run watch",
     "next_env": "cp .dev.vars .env.local",
     "migrate:prepare": "npx drizzle-kit generate:sqlite --schema=src/drizzle/schema.ts --out=./migrations",
+    "migrate:up": "npx wrangler d1 migrations apply middlecat_db",
     "migrate:up:local": "npx wrangler d1 migrations apply middlecat_db --local",
+    "migrate": "npm run migrate:prepare && npm run migrate:up",
     "migrate:local": "npm run migrate:prepare && npm run migrate:up:local",
     "pages:build": "npx @cloudflare/next-on-pages",
-    "pages:deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static",
+    "pages:deploy": "npx wrangler pages deploy .vercel/output/static",
+    "pages:publish": "npm run pages:build && npm run pages:deploy",
     "pages:watch": "npx @cloudflare/next-on-pages --watch",
     "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat",
-    "pages:dev:live": "npm run next_env && npx wrangler pages dev --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat -- next dev"
+    "deploy:logs": "npx wrangler pages deployment tail"
   },
   "dependencies": {
     "@auth/core": "^0.18.3",
@@ -36,8 +39,8 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "middlecat-react": "^0.3.17",
-    "@cloudflare/next-on-pages": "^1.8.5",
+    "wrangler": "^3.27.0",
+    "@cloudflare/next-on-pages": "^1.8.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -47,6 +50,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.0.3",
     "eslint-plugin-next-on-pages": "^1.7.4",
+    "middlecat-react": "^0.3.17",
     "postcss": "^8",
     "typescript": "^5",
     "vercel": "^32.3.0"
