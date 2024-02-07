@@ -2,9 +2,10 @@ import { authorizationCodeRequest, refreshTokenRequest, killSessionRequest } fro
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-const corsHeaders = {
+const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 const authorizationCodeSchema = z.object({
@@ -48,17 +49,17 @@ export async function POST(req: Request) {
     if (body.grant_type === "kill_session") {
       const refreshToken = body.refresh_token || body.session_id;
       if (!refreshToken) {
-        return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+        return NextResponse.json({ error: "Invalid request" }, { status: 400, headers });
       }
       const [sessionId] = refreshToken.split(".");
       responseBody = await killSessionRequest(sessionId);
     }
-    return NextResponse.json(responseBody, { status: 200, headers: corsHeaders });
+    return NextResponse.json(responseBody, { status: 200, headers });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Invalid request" }, { status: 400, headers: corsHeaders });
+    return NextResponse.json({ error: e?.message || "Invalid request" }, { status: 400, headers });
   }
 }
 
 export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+  return NextResponse.json({}, { headers });
 }

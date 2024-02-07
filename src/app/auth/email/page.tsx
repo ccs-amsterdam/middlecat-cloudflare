@@ -10,22 +10,42 @@ export default function EmailSignin() {
   const email = searchParams.get("email") || "";
 
   return (
-    <main className="flex min-h-screen flex-col items-center">
-      <div className="w-full bg-secondary p-8 border-b-2 border-primary">
-        <h1 className="text-5xl font-bold mb-2 text-center">Paper Bidding</h1>
-        <h4 className="text-center mt-4 mb-0">
-          Paper bidding website of the ICA Computational Methods Division
-        </h4>
-      </div>
-      <div className="mt-20">
+    <main>
+      <style jsx>
+        {`
+          main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            margin-top: 10vh;
+          }
+          form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 600px;
+            color: white;
+          }
+          button {
+            padding: 1rem;
+            font-size: 1.5rem;
+            font-weight: 500;
+          }
+        `}
+      </style>
+
+      <div>
         <form action="/api/auth/callback/email" method="get">
-          <h1>Sign in with your email</h1>
+          <h1>Email authentication confirmed</h1>
           {/* remove `type` and `value` if you want the user to type this manually */}
           <input type="hidden" name="token" value={token} />
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
           <input type="hidden" name="email" value={email} />
           <button type="submit" className="w-full">
-            Complete sign in
+            Continue
           </button>
         </form>
       </div>

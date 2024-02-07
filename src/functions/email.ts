@@ -16,7 +16,7 @@ type Address = { email: string; name?: string };
 type Content = { type: "text/plain" | "text/html"; value: string };
 
 interface MailChannelsEmail {
-  personalizations: { to: Address }[];
+  personalizations: { to: Address[] }[];
   from: Address;
   subject: string;
   content: Content[];
@@ -34,6 +34,8 @@ export async function sendEmail(email: Email) {
   if (Math.floor(resp.status / 100) !== 2) {
     throw new Error(`Error sending email: ${resp.status} ${resp.statusText}`);
   }
+
+  return resp;
 }
 
 function prepareEmail(email: Email): MailChannelsEmail {
@@ -42,8 +44,8 @@ function prepareEmail(email: Email): MailChannelsEmail {
   if (email.html) content.push({ type: "text/html", value: email.html });
 
   return {
-    personalizations: [{ to: { email: email.toEmail, name: email.toName } }],
-    from: { email: "noreplay@middlecat.net", name: "MiddleCat" },
+    personalizations: [{ to: [{ email: email.toEmail, name: email.toName }] }],
+    from: { email: "admin@middlecat.net", name: "admin" },
     subject: email.subject,
     content,
   };

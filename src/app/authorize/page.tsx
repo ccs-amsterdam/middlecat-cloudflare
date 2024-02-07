@@ -15,13 +15,16 @@ export default function Authorize() {
   const { data: csrfToken, isLoading: csrfLoading } = useCsrf();
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   if (status === "loading" || csrfLoading) return <Loading />;
 
   if (status === "unauthenticated") {
     // basically what signIn does, but signIn redirects via API which give a blank page on transition
-    router.push(`api/auth/signin?callbackURL=${pathname}`);
+    const callbackURL = `${pathname}?${searchParams.toString()}`;
+    // const callbackURL = pathname;
+    router.push(`api/auth/signin?callbackURL=${encodeURIComponent(callbackURL)}`);
   }
 
   if (!session) return null;

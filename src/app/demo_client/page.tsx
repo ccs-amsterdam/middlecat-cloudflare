@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { FaUser } from "react-icons/fa";
 
 export default function Demo() {
+  const [client, setClient] = useState(false);
+
+  useEffect(() => setClient(true), []);
+
+  if (!client) return null;
   return (
     <MiddlecatProvider fixedResource={`api/demo_resource`}>
       <DemoComponent />
@@ -15,7 +20,6 @@ export default function Demo() {
 function DemoComponent() {
   const { user, signIn, signOut } = useMiddlecat();
 
-  console.log(user);
   return (
     <div className="Page">
       <style jsx>

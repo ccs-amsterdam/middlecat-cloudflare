@@ -34,14 +34,11 @@ export const {
       async sendVerificationRequest(params) {
         const { identifier, theme } = params;
         const url = new URL(params.url);
-        const signInURL = new URL(
-          `/auth/email?${url.searchParams}`,
-          url.origin
-        );
+        const signInURL = new URL(`/auth/email?${url.searchParams}`, url.origin);
         const escapedHost = signInURL.host.replace(/\./g, "&#8203;.");
 
-        sendEmail({
-          toName: "",
+        await sendEmail({
+          toName: "User",
           toEmail: identifier,
           subject: `Sign in to MiddleCat`,
           text: `Sign in to '${escapedHost}' by following this link: ${signInURL} \n\n. If you did not request this email you can safely ignore it.`,

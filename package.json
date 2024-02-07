@@ -16,10 +16,10 @@
     "migrate": "npm run migrate:prepare && npm run migrate:up",
     "migrate:local": "npm run migrate:prepare && npm run migrate:up:local",
     "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat",
     "pages:deploy": "npx wrangler pages deploy .vercel/output/static",
     "pages:publish": "npm run pages:build && npm run pages:deploy",
     "pages:watch": "npx @cloudflare/next-on-pages --watch",
-    "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-date=2023-11-21 --compatibility-flag=nodejs_compat",
     "deploy:logs": "npx wrangler pages deployment tail"
   },
   "dependencies": {
