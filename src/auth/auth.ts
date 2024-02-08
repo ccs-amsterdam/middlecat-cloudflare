@@ -12,6 +12,9 @@ export const {
   trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
   adapter: DrizzleAdapter(db),
+  pages: {
+    verifyRequest: "/email_sent",
+  },
   session: {
     maxAge: 60 * 60, // kill session after 1 hour idle
     updateAge: 60 * 30, // extend session if <= 30 minutes left
@@ -31,6 +34,7 @@ export const {
       maxAge: 24 * 60 * 60,
       name: "Email",
       options: {},
+
       async sendVerificationRequest(params) {
         const { identifier, theme } = params;
         const url = new URL(params.url);
