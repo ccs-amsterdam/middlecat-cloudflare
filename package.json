@@ -30,6 +30,7 @@
     "@tanstack/react-query": "^5.14.1",
     "drizzle-orm": "^0.29.0",
     "jose": "^5.2.0",
+    "middlecat-react": "^0.3.19",
     "next": "14.0.3",
     "next-auth": "^5.0.0-beta.4",
     "react": "^18",
@@ -39,7 +40,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "wrangler": "^3.27.0",
     "@cloudflare/next-on-pages": "^1.8.6",
     "@types/node": "^20",
     "@types/react": "^18",
@@ -50,9 +50,9 @@
     "eslint": "^8",
     "eslint-config-next": "14.0.3",
     "eslint-plugin-next-on-pages": "^1.7.4",
-    "middlecat-react": "^0.3.17",
     "postcss": "^8",
     "typescript": "^5",
-    "vercel": "^32.3.0"
+    "vercel": "^32.3.0",
+    "wrangler": "^3.27.0"
   }
 }

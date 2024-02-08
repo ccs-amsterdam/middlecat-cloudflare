@@ -4,12 +4,14 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import AmcatSessions from "../components/AmcatSessions";
 import { useState } from "react";
 import { Loading } from "@/components/Loading";
+import SignIn from "@/components/SignIn";
 
 export default function Home() {
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
 
   if (status === "loading") return <Loading />;
+  if (status === "unauthenticated") return <SignIn />;
 
   return (
     <div className="Login fadeIn">

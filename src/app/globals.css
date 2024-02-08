@@ -112,12 +112,36 @@ button:hover:enabled {
 .Loading::after {
   content: "";
   position: absolute;
-  top: 0.4rem;
-  left: 0.4rem;
-  border: 7px solid #f3f3f3;
-  border-top: 7px solid var(--primary);
+  top: 0.8rem;
+  right: 0.8rem;
+  border: 7px solid var(--primary);
+  border-top: 7px solid #f3f3f3;
   border-radius: 50%;
   width: 7px;
   height: 7px;
-  animation: spin 1s linear infinite;
+  animation: spin 1.5s linear infinite;
+}
+
+.Divider {
+  display: flex;
+  position: relative;
+  margin: 1.5rem 10px;
+  z-index: 2;
+}
+
+.Divider div {
+  margin: auto;
+  background: var(--background);
+  z-index: 2;
+  padding: 0rem 1rem;
+}
+
+.Divider::after {
+  content: "";
+  position: absolute;
+  bottom: 1rem;
+  left: 0;
+  width: 100%;
+  z-index: 1;
+  border-bottom: 2px solid;
 }

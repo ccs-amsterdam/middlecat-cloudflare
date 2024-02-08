@@ -58,6 +58,7 @@ function Modal({ children, visible }: { children: React.ReactNode; visible: bool
           background: var(--secondary);
           border-radius: 5px;
           padding: 1rem;
+          max-width: 95vw;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -217,7 +218,8 @@ function CreateKeyForm({
     <>
       <style jsx>{`
         form {
-          max-width: 25rem;
+          width: 300px;
+          max-width: 90vw;
         }
         .field {
           margin-bottom: 1.5rem;
@@ -227,10 +229,12 @@ function CreateKeyForm({
         }
         label {
           margin: 0.5rem;
+          min-width: 0px;
         }
         input {
           margin-top: 0.5rem;
           font-size: 1rem;
+          min-width: 0px;
           width: 100%;
           padding: 0.5rem;
           border-radius: 5px;

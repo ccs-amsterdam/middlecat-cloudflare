@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { DefaultSession } from "next-auth";
 import { FaUser } from "react-icons/fa";
 import getResourceConfig from "@/functions/getResourceConfig";
@@ -10,6 +10,7 @@ import { Loading } from "@/components/Loading";
 import { z } from "zod";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ErrorMsg } from "@/components/ErrorMsg";
+import SignIn from "@/components/SignIn";
 
 export default function Authorize() {
   const { data: csrfToken, isLoading: csrfLoading } = useCsrf();
@@ -18,16 +19,11 @@ export default function Authorize() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  if (status === "loading" || csrfLoading) return <Loading />;
-
-  if (status === "unauthenticated") {
-    // basically what signIn does, but signIn redirects via API which give a blank page on transition
-    const callbackURL = `${pathname}?${searchParams.toString()}`;
-    // const callbackURL = pathname;
-    router.push(`api/auth/signin?callbackURL=${encodeURIComponent(callbackURL)}`);
+  function SwitchComponent() {
+    if (status === "loading") return <Loading />;
+    if (status === "unauthenticated" || !session) return <SignIn />;
+    return <ConfirmConnectRequest session={session} csrfToken={csrfToken} />;
   }
-
-  if (!session) return null;
 
   return (
     <div className="Container">
@@ -35,7 +31,8 @@ export default function Authorize() {
         .Container {
           margin: auto;
           width: 100%;
-          max-width: 400px;
+          max-width: 500px;
+          padding: 0rem 1rem;
           backdrop-filter: blur(3px);
           border-radius: 10px;
           position: relative;
@@ -43,7 +40,8 @@ export default function Authorize() {
           flex-direction: column;
         }
       `}</style>
-      <ConfirmConnectRequest session={session} csrfToken={csrfToken} />
+
+      <SwitchComponent />
     </div>
   );
 }
@@ -199,7 +197,7 @@ function ConfirmConnectRequest({ session, csrfToken }: ConfirmConnectRequestProp
         }
 
         .Connection:hover {
-          transform: scale(1.05);
+          transform: scale(1.02);
         }
 
         .ButtonGroup {
