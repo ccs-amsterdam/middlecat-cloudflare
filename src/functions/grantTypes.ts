@@ -101,7 +101,7 @@ export async function refreshTokenRequest(sessionId: string, refreshToken: strin
     }
   }
 
-  await createTokens(amcatSession);
+  return await createTokens(amcatSession);
 }
 
 export async function createTokens(amcatSession: InferSelectModel<typeof amcatSessions>) {

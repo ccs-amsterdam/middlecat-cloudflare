@@ -19,6 +19,5 @@ export default function useProviders() {
 export async function fetchProviders() {
   const res = await fetch("/api/auth/providers");
   const data = await res.json();
-  console.log(data);
   return providersSchema.parse(data);
 }

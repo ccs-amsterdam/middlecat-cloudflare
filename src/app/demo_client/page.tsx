@@ -11,7 +11,7 @@ export default function Demo() {
 
   if (!client) return null;
   return (
-    <MiddlecatProvider fixedResource={`api/demo_resource`}>
+    <MiddlecatProvider storeToken={true} fixedResource={`api/demo_resource`}>
       <DemoComponent />
     </MiddlecatProvider>
   );
