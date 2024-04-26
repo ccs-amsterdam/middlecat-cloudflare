@@ -43,7 +43,6 @@ export async function authorizationCodeRequest(code: string, codeVerifier: strin
   // authorization code has now been validated. We remove the secret stuff
   // to indicate that it can no longer be used.
   await db.update(amcatSessions).set({ secretExpires: null }).where(eq(amcatSessions.id, amcatSession.id));
-
   return await createTokens(amcatSession);
 }
 
@@ -53,19 +52,22 @@ export async function refreshTokenRequest(sessionId: string, refreshToken: strin
 
   const [amcatSession] = await db.select().from(amcatSessions).where(eq(amcatSessions.id, sessionId)).limit(1);
 
-  if (!amcatSession || amcatSession.expires < new Date(Date.now())) {
-    if (amcatSession) await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
+  if (!amcatSession) {
     throw new Error("Invalid refreshtoken request");
+  }
+
+  if (amcatSession.expires < new Date(Date.now())) {
+    if (amcatSession) await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
+    throw new Error("Refreshtoken expired");
   }
 
   const isValid = amcatSession.refreshToken === refreshToken;
   const isPrevious = amcatSession.refreshPrevious && amcatSession.refreshPrevious === refreshToken;
-
   if (!isValid && !isPrevious) {
     // If token is not valid nor the previous token, kill the entire session. This way
     // if a refresh token was stolen, the legitimate user will break the session
     await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
-    throw new Error("Invalid refreshtoken request");
+    throw new Error("Refreshtoken rotated");
   }
 
   if (amcatSession.refreshRotate) {

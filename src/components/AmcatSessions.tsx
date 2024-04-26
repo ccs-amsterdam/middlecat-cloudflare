@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loading } from "./Loading";
 import { ErrorMsg } from "./ErrorMsg";
 import { FaClock } from "react-icons/fa";
+import { IoCloseOutline } from "react-icons/io5";
 
 interface props {
   session: Session | null;
@@ -74,8 +75,13 @@ export default function AmcatSessions({ session }: props) {
           border: 1px solid var(--primary);
           border-radius: 1rem;
           box-shadow: 0px 1px 10px 0px var(--primary);
+
+          @media (max-width: 600px) {
+            padding: 1rem 1rem;
+          }
         }
         :global(.AmcatSession) {
+          position: relative;
           display: flex;
           align-items: center;
           margin: 0.5rem 0;
@@ -91,18 +97,28 @@ export default function AmcatSessions({ session }: props) {
           overflow: ellipsis;
         }
         :global(.AmcatSession .Context) {
-          color: var(--primary);
           font-style: italic;
+          font-size: 0.8rem;
+          overflow: hidden;
         }
         :global(.AmcatSession .Buttons) {
+          position: absolute;
+          right: 0;
           display: flex;
-          gap: 0.3rem;
+          items-align: center;
+          margin-right: 5px;
+        }
+        :global(.AmcatSession .Label) {
+          color: var(--primary);
         }
         :global(.AmcatSession button) {
           display: flex;
           white-space: nowrap;
           margin: 0;
           font-size: 1rem;
+          background: #222d;
+          color: white;
+          padding: 9px 5px;
         }
       `}</style>
 
@@ -143,14 +159,14 @@ function BrowserSessionRow({
   return (
     <div className={`AmcatSession`}>
       <div className="Details">
+        <div className="Label">{session.label}</div>
         <div className="Context">
           {date.toDateString()} - {session.createdOn}
         </div>
-        <div className="Label">{session.label}</div>
       </div>
       <div className="Buttons">
         <button className="PrimaryColor" onClick={() => closeSessions([session.id])}>
-          close
+          <IoCloseOutline size={25} />
         </button>
       </div>
     </div>
@@ -195,14 +211,20 @@ function ApiKeySessionRow({
         <Popup
           trigger={
             <button style={{ display: "flex", gap: "0.4rem" }}>
-              <FaClock />
-              <span>{expiresInValue}</span>
+              <FaClock size={25} style={{ padding: "2px" }} />
+              {/* <span>{expiresInValue}</span> */}
             </button>
           }
         >
           <h4>Add a form to change the expiration date</h4>
         </Popup>
-        <Popup trigger={<button>delete</button>}>
+        <Popup
+          trigger={
+            <button>
+              <IoCloseOutline size={25} />
+            </button>
+          }
+        >
           <h4>Are you certain?</h4>
           <button onClick={() => closeSessions([session.id])}>
             <span style={{ width: "100%", textAlign: "center" }}>Yes, delete</span>

@@ -11,7 +11,7 @@ follows.
 
 # Installation
 
-MiddleCat is specifically designed to be deployed on Cloudflare. Among the benefits are that Cloudflare workers allow you to send transactional emails (for magic links) for free using MailChannels, and makes it easy to hook up a database (D1). You could probably run MiddleCat on the free-tier, and the entry level paid program at 5 bucks a month includes sufficient compute to let you run this on a huge scale.
+MiddleCat is specifically designed to be deployed on Cloudflare. Among the benefits are that Cloudflare workers are fast edge deployed monkeys, allow you to send transactional emails (for magic links) for free using MailChannels, and makes it easy to hook up a edge proof database (D1). You could probably run MiddleCat on the free-tier, and the entry level paid program at 5 bucks a month includes sufficient compute to let you run this on a huge scale.
 
 That said, it does have some peculiarities with dev and deployment.
 
@@ -51,16 +51,15 @@ npm run migrate:local
 
 ## Development mode
 
-For development, best to just run the next dev. Optionally use dev:ts to run with typescript linting. (Note that you'll need to set the environment variables to really get started, as explained below)
+For development, best to just run the Nextjs dev mode. (note that next does not )
 
 ```
 npm run dev
-npm run dev:ts
 ```
 
 This should automatically run wrangler with bindings to the database.
 
-(note that in local development it's not possible to use the email login)
+(note that in local development it's not possible to use the email login. Best way to test things is setting up the Google ID)
 
 ## Deploying to cloudflare
 
@@ -83,7 +82,7 @@ This should sign you in to Cloudflare, and you can use the CLI to manage the dep
 
 ## Setting up MailChannels for email login
 
-You'll need to have a domain (which you can also buy on Cloudflare) to enable MailChannels email.
+You'll need to have a domain name (which you can also register on Cloudflare) to enable MailChannels email.
 
 In your DNS create a TXT record with the following name and value:
 
@@ -97,7 +96,7 @@ Also create an SPF record:
 
 # Server-side implementation
 
-The server side of things is quite straightforward. You'll need to do the following:
+To let a server use your Middlecat, it need to have an API endpoint that tells which Middlecat server it users, and validate Middlecat tokens using this Middlecat's public key. Specifically, you'll need to do the following:
 
 - Create a **[server-api]/config** GET endpoint that returns a JSON object with (at least) a 'middlecat_url'. By providing this url, the server indicates that it trusts this MiddleCat server to sign it's access_tokens
 - Obtain the **public_key** from this MiddleCat server. This can be obtained from **[middlecat]/api/configuration**, which returns a JSON object with (among other things) a **public_key**. The public key could change, so make sure to re-check routinely

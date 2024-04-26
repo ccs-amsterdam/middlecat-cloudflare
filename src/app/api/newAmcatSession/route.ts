@@ -98,8 +98,8 @@ function getCreatedOn(req: Request) {
 
 async function rmExpiredSessions() {
   // only needs to happen every now and then, so we do it roughly
-  // once for every 1000 new sessions
-  if (Math.random() > 0.001) return;
+  // once for every 100 new sessions
+  if (Math.random() > 0.01) return;
 
   await db.delete(amcatSessions).where(lt(amcatSessions.expires, new Date()));
 }

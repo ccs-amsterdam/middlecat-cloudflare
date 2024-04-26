@@ -1,7 +1,6 @@
 import { integer, sqliteTable, text, primaryKey, index } from "drizzle-orm/sqlite-core";
 import type { AdapterAccount } from "@auth/core/adapters";
 import { drizzle } from "drizzle-orm/d1";
-import hexSecret from "@/functions/hexSecret";
 
 // AUTH TABLES
 

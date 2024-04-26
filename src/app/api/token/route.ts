@@ -56,6 +56,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json(responseBody, { status: 200, headers });
   } catch (e: any) {
+    console.error(e);
     return NextResponse.json({ error: e?.message || "Invalid request" }, { status: 400, headers });
   }
 }

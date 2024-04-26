@@ -1,6 +1,7 @@
 :root {
   --primary: #38c7b9;
   --primary-warm: coral;
+  --primary-transparent: #38c7b966;
   --secondary: #008080;
   --secondary-warm: rgb(211, 63, 9);
   --blend: #00b4b4;
