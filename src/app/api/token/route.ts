@@ -1,3 +1,4 @@
+import getRequestBody from "@/functions/getRequestBody";
 import { authorizationCodeRequest, refreshTokenRequest, killSessionRequest } from "@/functions/grantTypes";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -28,10 +29,11 @@ const killSessionSchema = z.object({
 const bodySchema = z.discriminatedUnion("grant_type", [authorizationCodeSchema, refreshTokenSchema, killSessionSchema]);
 
 export async function POST(req: Request) {
-  const bodyValidator = bodySchema.safeParse(await req.json());
+  const rawBody = await getRequestBody(req);
+  const bodyValidator = bodySchema.safeParse(rawBody);
 
   if (!bodyValidator.success) {
-    return NextResponse.json({ error: "Invalid request body", zod: bodyValidator.error }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request body", zod: bodyValidator.error }, { status: 400, headers });
   }
   const body = bodyValidator.data;
 

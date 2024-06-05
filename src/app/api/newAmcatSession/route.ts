@@ -2,11 +2,11 @@ import settings from "@/functions/settings";
 import { createTokens } from "@/functions/grantTypes";
 import { z } from "zod";
 import { NextResponse, userAgent } from "next/server";
-import db, { amcatSessions, users } from "@/drizzle/schema";
+import db from "@/drizzle/db";
+import { amcatSessions, users } from "@/drizzle/schema";
 import { eq, lt } from "drizzle-orm";
 import safeSession from "@/functions/safeSession";
 import hexSecret from "@/functions/hexSecret";
-import { get } from "http";
 
 const bodySchema = z.object({
   csrfToken: z.string(),

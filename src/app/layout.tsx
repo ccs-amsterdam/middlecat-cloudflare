@@ -7,7 +7,7 @@ import { Metadata } from "next";
 
 const font = Poppins({
   weight: "500",
-  subsets: ["devanagari"],
+  subsets: ["latin"],
   display: "swap",
 });
 
@@ -18,11 +18,7 @@ export const metadata: Metadata = {
   description: "cat-in-the-middle authentication",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={font.className}>

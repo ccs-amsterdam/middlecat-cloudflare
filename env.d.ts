@@ -1,10 +1,9 @@
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      DB1: D1Database;
-      [key: string]: string | undefined;
-    }
+namespace NodeJS {
+  interface ProcessEnv {
+    DB1: D1Database;
   }
 }
 
-export {};
+interface CloudflareEnv {
+  DB1: D1Database;
+}

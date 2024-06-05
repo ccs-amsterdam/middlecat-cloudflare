@@ -2,7 +2,8 @@ import { BrowserSession, ApiKeySession } from "@/types";
 import { auth } from "@/auth/auth";
 import { NextResponse } from "next/server";
 import { and, asc, eq, gt } from "drizzle-orm";
-import db, { amcatSessions } from "@/drizzle/schema";
+import db from "@/drizzle/db";
+import { amcatSessions } from "@/drizzle/schema";
 
 export const runtime = "edge";
 

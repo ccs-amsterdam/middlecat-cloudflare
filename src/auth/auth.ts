@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
-import db from "@/drizzle/schema";
+import db from "@/drizzle/db";
 import { sendEmail } from "@/functions/email";
 
 export const {

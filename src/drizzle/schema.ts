@@ -1,6 +1,5 @@
 import { integer, sqliteTable, text, primaryKey, index } from "drizzle-orm/sqlite-core";
 import type { AdapterAccount } from "@auth/core/adapters";
-import { drizzle } from "drizzle-orm/d1";
 
 // AUTH TABLES
 
@@ -93,6 +92,3 @@ export const amcatSessions = sqliteTable(
     expiresIdx: index("expires_idx").on(table.expires),
   })
 );
-
-const db = drizzle(process.env.DB1);
-export default db;

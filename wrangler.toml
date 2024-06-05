@@ -1,10 +1,9 @@
 
 
 name = "middlecat-cloudflare"
-compatibility_date = "2023-11-21"
 compatibility_flags = [ "nodejs_compat" ]
 
-[[ d1_databases ]]
+[[d1_databases]]
 binding = "DB1"
 database_name = "middlecat_db"
 database_id = "3f5e804f-94db-4966-9726-a871c5c571a2"

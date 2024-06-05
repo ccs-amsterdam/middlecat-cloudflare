@@ -1,5 +1,6 @@
 import { createAccessToken } from "./createJWT";
-import db, { amcatSessions, users } from "@/drizzle/schema";
+import { amcatSessions, users } from "@/drizzle/schema";
+import db from "@/drizzle/db";
 import settings from "./settings";
 import { InferSelectModel, and, eq } from "drizzle-orm";
 import hexSecret from "./hexSecret";
@@ -134,7 +135,6 @@ export async function createTokens(amcatSession: InferSelectModel<typeof amcatSe
   // the refresh token that the client receives is actually the session id + refresh token
   const refresh_token = amcatSession.id + "." + amcatSession.refreshToken;
   const refresh_rotate = amcatSession.refreshRotate;
-
   return {
     token_type: "bearer",
     access_token,
