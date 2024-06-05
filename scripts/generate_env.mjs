@@ -13,8 +13,8 @@ const privateKey = keypair.privateKey.export({ type: "pkcs8", format: "pem" });
 console.log(`NEXTAUTH_URL=<url of where your middlecat is hosted>`);
 console.log(`NEXTAUTH_SECRET=${secret}`);
 
-console.log(`PUBLIC_KEY=${publicKey}`);
-console.log(`PRIVATE_KEY=${privateKey}`);
+console.log(`NEXT_PUBLIC_PUBLICKEY="${publicKey}"`);
+console.log(`PRIVATEKEY="${privateKey}"`);
 
 console.log("GOOGLE_ID=<your google id>");
 console.log("GOOGLE_SECRET=<your google secret>");
