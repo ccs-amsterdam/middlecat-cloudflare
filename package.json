@@ -9,6 +9,7 @@
     "lint": "next lint",
     "watch": "tsc --watch",
     "next_env": "cp .dev.vars .env.local",
+    "generate_env": "tsx scripts/generate_env.ts",
     "migrate:prepare": "npx drizzle-kit generate:sqlite --schema=src/drizzle/schema.ts --out=./migrations",
     "migrate:up": "npx wrangler d1 migrations apply middlecat_db",
     "migrate:up:local": "npx wrangler d1 migrations apply middlecat_db --local",
@@ -51,6 +52,7 @@
     "eslint-config-next": "14.0.3",
     "eslint-plugin-next-on-pages": "^1.7.4",
     "postcss": "^8",
+    "tsx": "^4.7.0",
     "typescript": "^5",
     "vercel": "^32.3.0",
     "wrangler": "^3.27.0"
