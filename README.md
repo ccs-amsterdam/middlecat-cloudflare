@@ -27,6 +27,10 @@ We create a .env.local file for our settings, Identity providers and secrets.
 You'll need to generate the secrets yourself (or enter some unsafe placeholders).
 Obtaining the GitHub and Google credentials and an SMTP server is fairly easy and google-able, but at some point we'll add some simple instructions as well.
 
+For email we use resend. For a simple server the free tier should be sufficient.
+For a server that should be able to handle a good dose of people the paid tiers are
+pretty good for this type of transactional email.
+
 ```
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=[a big cryptographic pseudo random secret goes here]
@@ -39,6 +43,8 @@ GITHUB_SECRET=
 
 GOOGLE_ID=
 GOOGLE_SECRET=
+
+RESEND_API_KEY="..."
 ```
 
 ## Migrate DB

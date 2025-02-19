@@ -1,9 +1,12 @@
 import { generateKeyPair } from "jose";
+import crypto from "crypto";
 
 const keypair = await generateKeyPair("RS256");
 
 function hexSecret(n) {
-  return Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 const secret = hexSecret(32);
