@@ -114,10 +114,10 @@ To let a server use your Middlecat, it need to have an API endpoint that tells w
 
 The current web clients for AmCAT are all written in React. We therefore provide a hook that makes it easy to setup a MiddleCat login. If you're already running MiddleCat, you can test the hook at **[middlecat]/demo_client**
 
-First install the middlecat-react NPM module
+First install the middlecat-sdk NPM module
 
 ```
-npm install middlecat-react
+npm install middlecat-sdk
 ```
 
 Then use the hook to get a user and AuthForm component.
@@ -142,7 +142,7 @@ By default, the refresh_token is not stored. This is safer, but has the downside
 We recommend that AmCAT clients use a fullstack framework like NextJS. Next to other (obvious?) benefits, this enables a third, more secure option that uses the backend as a proxy for the OAuth flow, and stores the refresh_token as a samesite httponly cookie. This means it won't be accessible from JS, and thereby safe(r) from XSS. To use this option, an API endpoint has to be made with the bffAuthHandler. In NextJS this would look as follows:
 
 ```
-import { bffAuthHandler } from "middlecat-react";
+import { bffAuthHandler } from "middlecat-sdk";
 import Cookies from "cookies";
 
 export default async function handler(req, res) {
