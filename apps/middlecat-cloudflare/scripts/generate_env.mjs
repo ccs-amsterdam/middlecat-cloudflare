@@ -1,5 +1,15 @@
 import { generateKeyPair } from "jose";
 import crypto from "crypto";
+import { writeFileSync, existsSync } from "node:fs";
+import { argv } from "node:process";
+
+const fname = argv[2];
+if (!fname) throw new Error("Please provide a filename as an argument");
+
+if (existsSync(fname)) {
+  console.error(`File "${fname}" already exists.`);
+  process.exit(0);
+}
 
 const keypair = await generateKeyPair("RS256");
 
@@ -19,8 +29,7 @@ NEXT_PUBLIC_PUBLICKEY="${publicKey}"
 PRIVATEKEY="${privateKey}"
 GOOGLE_ID="<your google id>"
 GOOGLE_SECRET="<your google secret>"
-GITHUB_ID="<your github id>"
-GITHUB_SECRET="<your github secret>"
+RESEND_API_KEY="<your resend api key>"
 `;
 
-console.log(content);
+writeFileSync(fname, content, "utf8");

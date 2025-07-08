@@ -3,20 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
-    "generate_env": "tsx scripts/generate_env.mjs",
     "migrate:prepare": "npx drizzle-kit generate:sqlite --schema=src/drizzle/schema.ts --out=./migrations",
     "migrate:up": "npx wrangler d1 migrations apply middlecat_db",
     "migrate:up:local": "npx wrangler d1 migrations apply middlecat_db --local",
     "migrate": "npm run migrate:prepare && npm run migrate:up",
     "migrate:local": "npm run migrate:prepare && npm run migrate:up:local",
-    "migrate:sqlite": "npx drizzle-kit generate:sqlite --schema=src/drizzle/schema.ts --out=./migrations && npx wrangler d1 migrations apply middlecat_db --local"
+    "migrate:sqlite": "npx drizzle-kit generate:sqlite --schema=src/drizzle/schema.ts --out=./migrations && npx wrangler d1 migrations apply middlecat_db --local",
+    "generate_env": "tsx scripts/generate_env.mjs .env.local"
   },
   "dependencies": {
     "@auth/core": "^0.18.3",
