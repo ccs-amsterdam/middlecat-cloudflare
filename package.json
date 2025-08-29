@@ -1,25 +1,55 @@
 {
   "name": "middlecat-cloudflare",
-  "description": "Monorepo for the Middlecat Cloudflare app and the SDK",
-  "version": "1.0.0",
-  "main": "index.js",
-  "workspaces": [
-    "./packages/*",
-    "./apps/*"
-  ],
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "generate_env": "tsx apps/middlecat-cloudflare/scripts/generate_env.mjs > apps/middlecat-cloudflare/.env.local"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+    "migrate:prepare": "npx drizzle-kit generate",
+    "migrate:up": "npx wrangler d1 migrations apply middlecat_db",
+    "migrate:up:local": "npx wrangler d1 migrations apply middlecat_db --local",
+    "migrate": "npm run migrate:prepare && npm run migrate:up",
+    "migrate:local": "npm run migrate:prepare && npm run migrate:up:local",
+    "migrate:sqlite": "npx drizzle-kit generate && npx wrangler d1 migrations apply middlecat_db --local",
+    "generate_env": "tsx scripts/generate_env.mjs .env.local"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ccs-amsterdam/middlecat-cloudflare.git"
+  "dependencies": {
+    "@auth/core": "^0.40.0",
+    "@auth/d1-adapter": "^1.10.0",
+    "@auth/drizzle-adapter": "^1.10.0",
+    "@opennextjs/cloudflare": "^1.4.0",
+    "@tanstack/react-query": "^5.14.1",
+    "drizzle-orm": "^0.44.5",
+    "iron-session": "^8.0.4",
+    "jose": "^5.2.0",
+    "next": "15.3.4",
+    "next-auth": "^5.0.0-beta.4",
+    "openid-client": "^6.7.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^4.12.0",
+    "resend": "^4.1.2",
+    "ua-parser-js": "^1.0.37",
+    "zod": "^3.22.4"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/ccs-amsterdam/middlecat-cloudflare/issues"
-  },
-  "homepage": "https://github.com/ccs-amsterdam/middlecat-cloudflare#readme"
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20.19.4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/ua-parser-js": "^0.7.39",
+    "autoprefixer": "^10.0.1",
+    "drizzle-kit": "^0.31.4",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.4",
+    "postcss": "^8",
+    "tsx": "^4.7.0",
+    "typescript": "^5",
+    "wrangler": "^4.23.0"
+  }
 }
