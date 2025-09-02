@@ -1,21 +1,29 @@
 ## Cat-in-the-middle authentication
 
-MiddleCat is the authentication server for various modules in the AmCAT infrastructure. The flow is as
-follows.
+MiddleCat is an OIDC provider with a twist, designed specifically for simplifying the deployment of AMCAT.
+It deviates a little bit from the standard OAuth2.0 / OIDC flows, in that it doesn't require clients to provide a client id and secret.
+This allows it to work out-of-the-box for any AmCAT server and client.
+The price for this is that it's not as secure as a full-featured provider like Auth0 or Keycloak, but we believe it's secure enough for the following use cases:
 
-- A client asks a server for its middlecat config at the API endpoint **[server]/middlecat**
-- The client performs an OAuth2.0 flow with the server's trusted MiddleCat server
-- The client receives an **access_token** and **refresh_token**. The server can verify the access_token using **MiddleCat's public key**
-- The most important claims in the access_token are the user's email address
-  and the resource (the server URL). The server only needs to know whether the user gave the client access. What the user is authorized to do is determined by the server.
+- You want to try out AmCAT first without going through the hassle of setting up a full OIDC provider
+- You need a quick server for demos, tutorial or teaching
+- Your data is not super sensitive
+
+## Why you shouldn't be here
+
+You probably don't want to set up a MiddleCat server yourself.
+If you're using AmCAT, you can use our server at https://middlecat.net.
+This does mean that you're trusting us to handle your authentication.
+But if you are working with sensitive data that requires managing your authentication yourself, we recommend using a full-featured provider like Auth0 or Keycloak, as explained in the AmCAT documentation.
 
 # Installation
 
-MiddleCat is specifically designed to be deployed on Cloudflare. Among the benefits are that Cloudflare workers are fast edge deployed monkeys, allow you to send transactional emails (for magic links) for free using MailChannels, and makes it easy to hook up a edge proof database (D1). You could probably run MiddleCat on the free-tier, and the entry level paid program at 5 bucks a month includes sufficient compute to let you run this on a huge scale.
+MiddleCat is a NextJS app designed to be deployed on Cloudflare, which includes all the batteries and is easy to set up.
+It's deployed on the edge, close to your users, and you don't have to manage any servers.
+The database is a Cloudflare D1 database, which is a SQLite database in the cloud.
+For a small server the free tier should be sufficient, and if you take the basic 5 bucks a month subscription you get a lot of extra capacity.
 
-That said, it does have some peculiarities with dev and deployment.
-
-## Install npm
+## Install dependencies
 
 ```
 npm i
@@ -24,12 +32,11 @@ npm i
 ## Set the environment variables
 
 We create a .env.local file for our settings, Identity providers and secrets.
-You'll need to generate the secrets yourself (or enter some unsafe placeholders).
-Obtaining the GitHub and Google credentials and an SMTP server is fairly easy and google-able, but at some point we'll add some simple instructions as well.
+The easiest way to create this is to run `npm run generate_env`, which will automatically
+generate cryptographic secrets for you.
 
+What you still need to do is to add the credentials for GitHub and Google login, and an SMTP server for email login.
 For email we use resend. For a simple server the free tier should be sufficient.
-For a server that should be able to handle a good dose of people the paid tiers are
-pretty good for this type of transactional email.
 
 ```
 NEXTAUTH_URL=http://localhost:3000
@@ -47,58 +54,25 @@ GOOGLE_SECRET=
 RESEND_API_KEY="..."
 ```
 
-## Migrate DB
+## Local development
 
-For development we use miniflare to emulate the D1 database. If all is well, you should just be able to migrate out of the box.
+For development we use miniflare to emulate the D1 database locally. If all is well, you should just be able to migrate out of the box.
 
 ```
 npm run migrate:local
 ```
 
-## Development mode
-
-For development, best to just run the Nextjs dev mode. (note that next does not )
+Now run the dev server
 
 ```
 npm run dev
 ```
 
-This should automatically run wrangler with bindings to the database.
-
 (note that in local development it's not possible to use the email login. Best way to test things is setting up the Google ID)
+
 
 ## Deploying to cloudflare
 
-Cloudflare has [documentation](https://developers.cloudflare.com/pages/framework-guides/deploy-a-nextjs-site/) on how to deploy NextJs applications (using the next-on-pages module).
-
-Before you deploy, first check if everything works with
-
-```
-npm run pages:build
-npm run pages:dev
-```
-
-If it works, you can run the following command to deploy the build you just made
-
-```
-npm run pages:deploy
-```
-
-This should sign you in to Cloudflare, and you can use the CLI to manage the deployment. Note that you will need to set the environment variables for your Cloudflare worker yourself.
-
-## Setting up MailChannels for email login
-
-You'll need to have a domain name (which you can also register on Cloudflare) to enable MailChannels email.
-
-In your DNS create a TXT record with the following name and value:
-
-- Name: \_mailchannels
-- Value: v=mc1 cfid=yourcloudflareworker.workers.dev
-
-Also create an SPF record:
-
-- Name: @
-- Value: v=spf1 include:\_spf.mx.cloudflare.net include:relay.mailchannels.net ~all
 
 # Server-side implementation
 

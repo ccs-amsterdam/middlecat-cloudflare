@@ -39,7 +39,10 @@ export default function AmcatSessions({ session }: props) {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ grant_type: "kill_session", session_id: session_id }),
+        body: JSON.stringify({
+          grant_type: "kill_session",
+          session_id: session_id,
+        }),
       });
     }
 
@@ -125,11 +128,21 @@ export default function AmcatSessions({ session }: props) {
       <div className="SessionContainer">
         <div className="Header">
           <h2>Browser sessions</h2>
-          <h4 className="PrimaryColor">Monitor connections across browsers and devices</h4>
-          {sessionData?.browser?.length ? null : <h4>- No active sessions -</h4>}
+          <h4 className="PrimaryColor">
+            Monitor connections across browsers and devices
+          </h4>
+          {sessionData?.browser?.length ? null : (
+            <h4>- No active sessions -</h4>
+          )}
         </div>
         {sessionData.browser.map((session) => {
-          return <BrowserSessionRow key={session.id} session={session} closeSessions={closeSessions} />;
+          return (
+            <BrowserSessionRow
+              key={session.id}
+              session={session}
+              closeSessions={closeSessions}
+            />
+          );
         })}
       </div>
       <div className="SessionContainer">
@@ -138,9 +151,18 @@ export default function AmcatSessions({ session }: props) {
           <h4 className="SecondaryColor">Manage and create API keys</h4>
           {sessionData?.apiKey?.length ? null : <h4>- No active API Keys -</h4>}
         </div>
-        <CreateApiKey csrfToken={csrfToken || ""} fetchSessions={fetchSessions} />
+        <CreateApiKey
+          csrfToken={csrfToken || ""}
+          fetchSessions={fetchSessions}
+        />
         {sessionData.apiKey.map((session) => {
-          return <ApiKeySessionRow key={session.id} session={session} closeSessions={closeSessions} />;
+          return (
+            <ApiKeySessionRow
+              key={session.id}
+              session={session}
+              closeSessions={closeSessions}
+            />
+          );
         })}
       </div>
     </div>
@@ -165,7 +187,10 @@ function BrowserSessionRow({
         </div>
       </div>
       <div className="Buttons">
-        <button className="PrimaryColor" onClick={() => closeSessions([session.id])}>
+        <button
+          className="PrimaryColor"
+          onClick={() => closeSessions([session.id])}
+        >
           <IoCloseOutline size={25} />
         </button>
       </div>
@@ -185,12 +210,16 @@ function ApiKeySessionRow({
   session: ApiKeySession;
   closeSessions: (ids: string[]) => void;
 }) {
-  const [expiresIn, setExpiresIn] = useState<number>(calcExpiresIn(session.expires));
+  const [expiresIn, setExpiresIn] = useState<number>(
+    calcExpiresIn(session.expires),
+  );
   const date = new Date(session.createdAt);
 
   const expiresInMinutes = expiresIn / (1000 * 60);
   const expiresInValue =
-    expiresInMinutes > 60 * 24 ? minutesToDays(expiresInMinutes) : minutesToTimeFormat(expiresInMinutes);
+    expiresInMinutes > 60 * 24
+      ? minutesToDays(expiresInMinutes)
+      : minutesToTimeFormat(expiresInMinutes);
 
   useEffect(() => {
     const expiresIn = calcExpiresIn(session.expires);
@@ -212,7 +241,7 @@ function ApiKeySessionRow({
           trigger={
             <button style={{ display: "flex", gap: "0.4rem" }}>
               <FaClock size={25} style={{ padding: "2px" }} />
-              {/* <span>{expiresInValue}</span> */}
+              <span>{expiresInValue}</span>
             </button>
           }
         >
@@ -227,7 +256,9 @@ function ApiKeySessionRow({
         >
           <h4>Are you certain?</h4>
           <button onClick={() => closeSessions([session.id])}>
-            <span style={{ width: "100%", textAlign: "center" }}>Yes, delete</span>
+            <span style={{ width: "100%", textAlign: "center" }}>
+              Yes, delete
+            </span>
           </button>
         </Popup>
       </div>

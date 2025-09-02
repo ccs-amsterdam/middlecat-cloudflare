@@ -3,11 +3,11 @@ import { cookies } from "next/headers";
 import * as client from "openid-client";
 
 // normally set these with env vars
-let api_url = "http://localhost:3000";
-let app_url = "http://localhost:3000/demo_client";
-let client_id = "http://localhost:3000";
-let scope = "openid profile email";
-let secret = "complex_password_at_least_32_characters_long";
+const api_url = "http://localhost:3000";
+const app_url = "http://localhost:3000/demo_client";
+const client_id = "http://localhost:3000";
+const scope = "openid profile email";
+const secret = "complex_password_at_least_32_characters_long";
 
 export const clientConfig = {
   url: api_url,
@@ -56,7 +56,10 @@ export const sessionOptions: SessionOptions = {
 
 export async function getSession(): Promise<IronSession<SessionData>> {
   const cookiesList = await cookies();
-  let session = await getIronSession<SessionData>(cookiesList, sessionOptions);
+  const session = await getIronSession<SessionData>(
+    cookiesList,
+    sessionOptions,
+  );
   if (!session.isLoggedIn) {
     session.access_token = defaultSession.access_token;
     session.userInfo = defaultSession.userInfo;

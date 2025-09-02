@@ -1,12 +1,15 @@
-"use client";
-
 import { useState } from "react";
 import { FaClipboard, FaWindowClose } from "react-icons/fa";
 import copyToClipboard from "../functions/copyToClipboard";
-import getResourceConfig from "../functions/getResourceConfig";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function CreateApiKey({ csrfToken, fetchSessions }: { csrfToken: string; fetchSessions: () => void }) {
+export default function CreateApiKey({
+  csrfToken,
+  fetchSessions,
+}: {
+  csrfToken: string;
+  fetchSessions: () => void;
+}) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<string>();
@@ -29,14 +32,24 @@ export default function CreateApiKey({ csrfToken, fetchSessions }: { csrfToken: 
         {token ? (
           <ShowAPIKey token={token} finish={finish} />
         ) : (
-          <CreateKeyForm csrfToken={csrfToken} createdToken={createdToken} finish={finish} />
+          <CreateKeyForm
+            csrfToken={csrfToken}
+            createdToken={createdToken}
+            finish={finish}
+          />
         )}
       </Modal>
     </div>
   );
 }
 
-function Modal({ children, visible }: { children: React.ReactNode; visible: boolean }) {
+function Modal({
+  children,
+  visible,
+}: {
+  children: React.ReactNode;
+  visible: boolean;
+}) {
   return (
     <div>
       <style jsx>{`
@@ -76,7 +89,10 @@ function Modal({ children, visible }: { children: React.ReactNode; visible: bool
           }
         }
       `}</style>
-      <div className="modal fadeIn" style={{ display: visible ? "flex" : "none" }}>
+      <div
+        className="modal fadeIn"
+        style={{ display: visible ? "flex" : "none" }}
+      >
         <div className="modal-content">{children}</div>
       </div>
     </div>
@@ -166,9 +182,9 @@ function CreateKeyForm({
   const defaultDate = new Date(Date.now());
   defaultDate.setFullYear(defaultDate.getFullYear() + 1);
 
-  async function onSubmit(e: any) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.target);
+    const formData = new FormData(e.currentTarget);
 
     const expires = new Date(String(formData.get("expires_date") || ""));
     const resource = formData.get("resource") as string;

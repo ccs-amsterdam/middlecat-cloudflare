@@ -1,9 +1,21 @@
 // get body for either formdata or json
-export default async function getRequestBody<T>(req: Request): Promise<Record<string, any>> {
+export default async function getRequestBody(
+  req: Request,
+): Promise<Record<string, unknown>> {
   const contentType = req.headers.get("content-type");
-  if (contentType === "application/x-www-form-urlencoded") {
-    const formdata = await req.formData();
-    return Object.fromEntries(formdata.entries());
+
+  if (contentType?.includes("application/json")) {
+    // Correctly handle JSON bodies
+    return await req.json();
   }
-  return await req.json();
+
+  if (
+    contentType?.includes("application/x-www-form-urlencoded") ||
+    contentType?.includes("multipart/form-data")
+  ) {
+    const formData = await req.formData();
+    return Object.fromEntries(formData.entries());
+  }
+
+  throw new Error(`Unsupported Content-Type: ${contentType}`);
 }

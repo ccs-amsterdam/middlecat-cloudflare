@@ -26,7 +26,8 @@ export default async function safeSession(csrfToken: string) {
 async function verifyCSRF(csrfToken: string): Promise<boolean> {
   // look for ".*csrf-token.*", because apparently the exact name can differ depending on host
   // TODO: specify when we know the exact options (but safe enough because of the hash)
-  const cookieVals = cookies()
+  const cookieStore = await cookies();
+  const cookieVals = cookieStore
     .getAll()
     .find((item) => item.name.includes("csrf-token"));
   const [token, hash] = decodeURI(cookieVals?.value || "").split("|");
@@ -49,6 +50,8 @@ async function digestMessage(message: string) {
   const msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8); // hash the message
   const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join(""); // convert bytes to hex string
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join(""); // convert bytes to hex string
   return hashHex;
 }

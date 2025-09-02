@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-  const publicKey = process.env.NEXT_PUBLIC_PUBLICKEY || "";
+export async function GET() {
   const app_url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const configuration = {

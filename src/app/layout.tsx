@@ -10,7 +10,7 @@ const font = Poppins({
   display: "swap",
 });
 
-export const runtime = "edge";
+// export const runtime = "edge";
 
 export const metadata: Metadata = {
   title: "MiddleCat",

@@ -7,10 +7,7 @@ const jwk = await jose.exportJWK(keyLike);
 const n = jwk.n;
 const e = jwk.e;
 
-export async function GET(req: Request) {
-  const publicKey = process.env.NEXT_PUBLIC_PUBLICKEY || "";
-  const app_url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
+export async function GET() {
   const jwks = {
     keys: [
       {

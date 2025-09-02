@@ -2,11 +2,13 @@ import settings from "@/functions/settings";
 import { createTokens } from "@/functions/grantTypes";
 import { z } from "zod";
 import { NextResponse, userAgent } from "next/server";
-import db from "@/drizzle/db";
+import { getDb } from "@/drizzle/db";
 import { amcatSessions, users } from "@/drizzle/schema";
 import { eq, lt } from "drizzle-orm";
 import safeSession from "@/functions/safeSession";
 import hexSecret from "@/functions/hexSecret";
+
+const db = getDb();
 
 const bodySchema = z.object({
   csrfToken: z.string(),
@@ -32,10 +34,24 @@ export async function POST(req: Request) {
 
   const bodyValidator = bodySchema.safeParse(await req.json());
   if (!bodyValidator.success) {
-    return NextResponse.json({ error: "Invalid request body", zod: bodyValidator.error }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid request body", zod: bodyValidator.error },
+      { status: 400 },
+    );
   }
-  const { csrfToken, clientId, state, codeChallenge, label, type, scope, refreshRotate, expiresIn, resource, oauth } =
-    bodyValidator.data;
+  const {
+    csrfToken,
+    clientId,
+    state,
+    codeChallenge,
+    label,
+    type,
+    scope,
+    refreshRotate,
+    expiresIn,
+    resource,
+    oauth,
+  } = bodyValidator.data;
 
   const { user, error } = await safeSession(csrfToken);
   if (!user?.email) return NextResponse.json(error, { status: 401 });
@@ -77,11 +93,16 @@ export async function POST(req: Request) {
         authCode: amcatsession.id + "." + amcatsession.secret,
         state,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } else {
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    if (!user)
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     const responseBody = await createTokens(amcatsession);
     return NextResponse.json(responseBody, { status: 200 });
   }

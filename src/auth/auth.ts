@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
-import db from "@/drizzle/db";
+import { getDbAsync } from "@/drizzle/db";
 import { Resend } from "resend";
 import { Provider } from "next-auth/providers";
 
@@ -13,10 +13,10 @@ const resend = process.env.RESEND_API_KEY
 export const {
   handlers: { GET, POST },
   auth,
-} = NextAuth({
+} = NextAuth(async () => ({
   trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
-  adapter: DrizzleAdapter(db),
+  adapter: DrizzleAdapter(await getDbAsync()),
   pages: {
     verifyRequest: "/email_sent",
   },
@@ -31,7 +31,7 @@ export const {
     buttonText: "#000",
   },
   providers: dynamicProviders(),
-});
+}));
 
 function dynamicProviders(): Provider[] {
   const providers: Provider[] = [];

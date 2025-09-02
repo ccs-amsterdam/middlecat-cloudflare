@@ -6,6 +6,7 @@ import {
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import * as client from "openid-client";
+
 export async function GET(request: NextRequest) {
   const session = await getSession();
   const openIdClientConfig = await getClientConfig();
@@ -27,7 +28,11 @@ export async function GET(request: NextRequest) {
   const { access_token } = tokenSet;
   session.isLoggedIn = true;
   session.access_token = access_token;
-  let claims = tokenSet.claims()!;
+  const claims = tokenSet.claims()!;
+
+  console.log(tokenSet);
+  console.log(claims);
+
   const { sub } = claims;
   // call userinfo endpoint to get user info
   const userinfo = await client.fetchUserInfo(

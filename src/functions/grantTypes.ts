@@ -1,12 +1,17 @@
-import { createAccessToken } from "./createJWT";
-import { amcatSessions, users } from "@/drizzle/schema";
-import db from "@/drizzle/db";
+import { createAccessToken, createIdToken } from "./createJWT";
+import { amcatSessions } from "@/drizzle/schema";
+import { getDb } from "@/drizzle/db";
 import settings from "./settings";
 import { InferSelectModel, and, eq } from "drizzle-orm";
 import hexSecret from "./hexSecret";
 import createCodeChallenge from "./createCodeChallenge";
 
-export async function authorizationCodeRequest(code: string, codeVerifier: string) {
+const db = getDb();
+
+export async function authorizationCodeRequest(
+  code: string,
+  codeVerifier: string,
+) {
   // validate the authorization code grant, and if pass create
   // the access token and refresh token
 
@@ -43,27 +48,40 @@ export async function authorizationCodeRequest(code: string, codeVerifier: strin
 
   // authorization code has now been validated. We remove the secret stuff
   // to indicate that it can no longer be used.
-  await db.update(amcatSessions).set({ secretExpires: null }).where(eq(amcatSessions.id, amcatSession.id));
+  await db
+    .update(amcatSessions)
+    .set({ secretExpires: null })
+    .where(eq(amcatSessions.id, amcatSession.id));
   return await createTokens(amcatSession);
 }
 
-export async function refreshTokenRequest(sessionId: string, refreshToken: string) {
+export async function refreshTokenRequest(
+  sessionId: string,
+  refreshToken: string,
+) {
   // the refresh token that the client receives is actually the session id + refresh token
   //const [sessionId, refreshToken] = refresh_token.split(".");
 
-  const [amcatSession] = await db.select().from(amcatSessions).where(eq(amcatSessions.id, sessionId)).limit(1);
+  const [amcatSession] = await db
+    .select()
+    .from(amcatSessions)
+    .where(eq(amcatSessions.id, sessionId))
+    .limit(1);
 
   if (!amcatSession) {
     throw new Error("Invalid refreshtoken request");
   }
 
   if (amcatSession.expires < new Date(Date.now())) {
-    if (amcatSession) await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
+    if (amcatSession)
+      await db.delete(amcatSessions).where(eq(amcatSessions.id, sessionId));
     throw new Error("Refreshtoken expired");
   }
 
   const isValid = amcatSession.refreshToken === refreshToken;
-  const isPrevious = amcatSession.refreshPrevious && amcatSession.refreshPrevious === refreshToken;
+  const isPrevious =
+    amcatSession.refreshPrevious &&
+    amcatSession.refreshPrevious === refreshToken;
   if (!isValid && !isPrevious) {
     // If token is not valid nor the previous token, kill the entire session. This way
     // if a refresh token was stolen, the legitimate user will break the session
@@ -74,7 +92,9 @@ export async function refreshTokenRequest(sessionId: string, refreshToken: strin
   if (amcatSession.refreshRotate) {
     // the new previous token should be the one used (refreshToken or refreshPrevious).
     // if not, the legitimate user and thief could take turns refreshing.
-    const usedToken = isPrevious ? amcatSession.refreshPrevious : amcatSession.refreshToken;
+    const usedToken = isPrevious
+      ? amcatSession.refreshPrevious
+      : amcatSession.refreshToken;
     amcatSession.refreshToken = hexSecret(32);
 
     await db
@@ -91,14 +111,21 @@ export async function refreshTokenRequest(sessionId: string, refreshToken: strin
   // expiration date on every request.
   if (amcatSession.type === "browser") {
     const expirationDate = amcatSession.expires;
-    const minExpiration = new Date(Date.now() + 1000 * 60 * 60 * settings.browser.session_update_age_hours);
-    const maxExpiration = new Date(Date.now() + 1000 * 60 * 60 * settings.browser.session_max_age_hours);
+    const minExpiration = new Date(
+      Date.now() + 1000 * 60 * 60 * settings.browser.session_update_age_hours,
+    );
+    const maxExpiration = new Date(
+      Date.now() + 1000 * 60 * 60 * settings.browser.session_max_age_hours,
+    );
 
     if (expirationDate < minExpiration || expirationDate > maxExpiration) {
       await db
         .update(amcatSessions)
         .set({
-          expires: new Date(Date.now() + 1000 * 60 * 60 * settings.browser.session_max_age_hours),
+          expires: new Date(
+            Date.now() +
+              1000 * 60 * 60 * settings.browser.session_max_age_hours,
+          ),
         })
         .where(eq(amcatSessions.id, amcatSession.id));
     }
@@ -107,7 +134,9 @@ export async function refreshTokenRequest(sessionId: string, refreshToken: strin
   return await createTokens(amcatSession);
 }
 
-export async function createTokens(amcatSession: InferSelectModel<typeof amcatSessions>) {
+export async function createTokens(
+  amcatSession: InferSelectModel<typeof amcatSessions>,
+) {
   const { email, name, image, clientId, resource } = amcatSession;
 
   const middlecat = process.env.NEXTAUTH_URL || "";
@@ -115,17 +144,27 @@ export async function createTokens(amcatSession: InferSelectModel<typeof amcatSe
   // expire access tokens
   // (exp seems to commonly be in seconds)
   const expireMinutes = settings[amcatSession.type].access_expire_minutes;
-  const exp = Math.floor(Date.now() / 1000) + 60 * expireMinutes;
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = iat + 60 * expireMinutes;
 
   const access_token = await createAccessToken({
-    clientId,
-    resource,
-    email: email || "",
-    name: name || "",
-    image: image || "",
+    iss: middlecat,
+    sub: email || "",
+    aud: resource,
+    azp: clientId,
+    exp: exp,
+    iat,
     scope: amcatSession.scope || "",
-    exp,
-    middlecat,
+  });
+
+  const id_token = await createIdToken({
+    iss: middlecat,
+    sub: email || "",
+    aud: clientId,
+    exp: exp,
+    iat,
+    name: name || "",
+    picture: image || "",
   });
 
   // oauth typically uses expires_in in seconds as a relative offset (due to local time issues).
@@ -134,12 +173,12 @@ export async function createTokens(amcatSession: InferSelectModel<typeof amcatSe
 
   // the refresh token that the client receives is actually the session id + refresh token
   const refresh_token = amcatSession.id + "." + amcatSession.refreshToken;
-  const refresh_rotate = amcatSession.refreshRotate;
+
   return {
     token_type: "bearer",
     access_token,
+    id_token,
     refresh_token,
-    refresh_rotate,
     expires_in,
   };
 }
@@ -148,7 +187,11 @@ export async function killSessionRequest(sessionId: string) {
   //const body = req.body || {};
   //const [sessionId] = body.refreshToken.split(".");
 
-  const [amcatSession] = await db.select().from(amcatSessions).where(eq(amcatSessions.id, sessionId)).limit(1);
+  const [amcatSession] = await db
+    .select()
+    .from(amcatSessions)
+    .where(eq(amcatSessions.id, sessionId))
+    .limit(1);
 
   if (amcatSession) {
     await db.delete(amcatSessions).where(eq(amcatSessions.id, amcatSession.id));

@@ -1,23 +1,19 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { DefaultSession } from "next-auth";
-import { FaUser } from "react-icons/fa";
 import getResourceConfig from "@/functions/getResourceConfig";
 import { useState } from "react";
 import useCsrf from "@/query/useCsrf";
 import { Loading } from "@/components/Loading";
 import { z } from "zod";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ErrorMsg } from "@/components/ErrorMsg";
 import SignIn from "@/components/SignIn";
 
 export default function Authorize() {
-  const { data: csrfToken, isLoading: csrfLoading } = useCsrf();
+  const { data: csrfToken } = useCsrf();
   const { data: session, status } = useSession();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
 
   function SwitchComponent() {
     if (status === "loading") return <Loading />;
@@ -51,7 +47,10 @@ interface ConfirmConnectRequestProps {
   csrfToken: string | undefined;
 }
 
-function ConfirmConnectRequest({ session, csrfToken }: ConfirmConnectRequestProps) {
+function ConfirmConnectRequest({
+  session,
+  csrfToken,
+}: ConfirmConnectRequestProps) {
   const user = session.user;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,7 +64,9 @@ function ConfirmConnectRequest({ session, csrfToken }: ConfirmConnectRequestProp
   const scope = searchParams.get("scope") || "default";
   const session_type = searchParams.get("session_type") || "";
   const refresh_mode = searchParams.get("refresh_mode") || "";
-  const expires_in = searchParams.has("expires_in_sec") ? Number(searchParams.get("expires_in_sec")) : null;
+  const expires_in = searchParams.has("expires_in_sec")
+    ? Number(searchParams.get("expires_in_sec"))
+    : null;
 
   if (!client_id) return <ErrorMsg>Client ID is missing</ErrorMsg>;
   if (!redirect_uri) return <ErrorMsg>Redirect URI is missing</ErrorMsg>;
@@ -89,8 +90,16 @@ function ConfirmConnectRequest({ session, csrfToken }: ConfirmConnectRequestProp
   }
 
   if (type === "browser") {
-    if (!refresh_rotate) return <ErrorMsg>Browser sessions cannot disable refresh token rotation.</ErrorMsg>;
-    if (expires_in) return <ErrorMsg>Browser sessions cannot set custom expire_in time</ErrorMsg>;
+    if (!refresh_rotate)
+      return (
+        <ErrorMsg>
+          Browser sessions cannot disable refresh token rotation.
+        </ErrorMsg>
+      );
+    if (expires_in)
+      return (
+        <ErrorMsg>Browser sessions cannot set custom expire_in time</ErrorMsg>
+      );
   }
 
   const acceptToken = () => {
@@ -213,24 +222,29 @@ function ConfirmConnectRequest({ session, csrfToken }: ConfirmConnectRequestProp
       `}</style>
       <div className="ConnectionDetails">
         <div className="User">
-          {user?.image ? (
-            <img className="Image" src={user.image} referrer-policy="no-referrer" alt="Profile picture" />
-          ) : (
-            <FaUser className="MissingImage" />
-          )}
           <div className="UserName">
             {user?.name || user?.email}
-            {user?.name ? <span style={{ fontSize: "1.2rem" }}>{user?.email}</span> : null}
+            {user?.name ? (
+              <span style={{ fontSize: "1.2rem" }}>{user?.email}</span>
+            ) : null}
           </div>
         </div>
         <div className="ConfirmMessage">
           <b className="SecondaryColor">{clientLabel}</b>*
-          <br /> <span style={{ color: "var(--primary)" }}>requests access to</span> <br />
-          <b className="SecondaryColor">{serverURL.host + serverURL.pathname}</b>{" "}
+          <br />{" "}
+          <span style={{ color: "var(--primary)" }}>
+            requests access to
+          </span>{" "}
+          <br />
+          <b className="SecondaryColor">
+            {serverURL.host + serverURL.pathname}
+          </b>{" "}
         </div>
       </div>
       <div className="ConnectionContainer" onClick={acceptToken}>
-        <div className={`Connection ${loading ? "Loading" : ""}`}>Authorize</div>
+        <div className={`Connection ${loading ? "Loading" : ""}`}>
+          Authorize
+        </div>
         <p className="ClientNote">* {clientNote}</p>
       </div>
 
@@ -298,12 +312,12 @@ async function createAmcatSession({
   });
 
   if (!res.ok) {
-    const body: any = await res.json();
+    const body: { zod?: { issues: string } } = await res.json();
     console.error(res.status, res.statusText);
     if (body.zod)
       console.error(
         "Invalid parameters passed to newAmcatSession route. This shouldn't happen (obviously). See issues to debug",
-        body.zod.issues
+        body.zod.issues,
       );
     throw new Error("Failed to create session");
   }

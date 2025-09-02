@@ -2,10 +2,11 @@ import { BrowserSession, ApiKeySession } from "@/types";
 import { auth } from "@/auth/auth";
 import { NextResponse } from "next/server";
 import { and, asc, eq, gt } from "drizzle-orm";
-import db from "@/drizzle/db";
+import { getDb } from "@/drizzle/db";
 import { amcatSessions } from "@/drizzle/schema";
 
-export const runtime = "edge";
+const db = getDb();
+// export const runtime = "edge";
 
 export async function GET() {
   const session = await auth();
@@ -16,13 +17,18 @@ export async function GET() {
   const aSessions = await db
     .select()
     .from(amcatSessions)
-    .where(and(eq(amcatSessions.email, session.user.email), gt(amcatSessions.expires, new Date())))
+    .where(
+      and(
+        eq(amcatSessions.email, session.user.email),
+        gt(amcatSessions.expires, new Date()),
+      ),
+    )
     .orderBy(asc(amcatSessions.expires));
 
   const browser: BrowserSession[] = [];
   const apiKey: ApiKeySession[] = [];
 
-  for (let s of aSessions) {
+  for (const s of aSessions) {
     const { label, resource, expires, id, createdOn, createdAt } = s;
     if (s.type === "browser")
       browser.push({
@@ -32,7 +38,8 @@ export async function GET() {
         resource,
         id,
       });
-    if (s.type === "apiKey") apiKey.push({ label, createdOn, createdAt, resource, expires, id });
+    if (s.type === "apiKey")
+      apiKey.push({ label, createdOn, createdAt, resource, expires, id });
   }
 
   return NextResponse.json({ browser, apiKey }, { status: 200 });
