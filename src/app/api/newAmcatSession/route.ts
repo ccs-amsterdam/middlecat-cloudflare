@@ -13,6 +13,7 @@ const db = getDb();
 const bodySchema = z.object({
   csrfToken: z.string(),
   clientId: z.string().max(200),
+  clientSecret: z.string().max(200).nullish(),
   state: z.string().optional(),
   codeChallenge: z.string().max(128).optional(),
   label: z.string().max(100),
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
   const {
     csrfToken,
     clientId,
+    clientSecret,
     state,
     codeChallenge,
     label,
@@ -53,6 +55,11 @@ export async function POST(req: Request) {
     oauth,
   } = bodyValidator.data;
 
+  if (!checkRegisteredClient(clientId, clientSecret || null, resource)) {
+    return NextResponse.json({ error: "Unknown client" }, { status: 401 });
+  }
+
+  // check if logged in to middlecat
   const { user, error } = await safeSession(csrfToken);
   if (!user?.email) return NextResponse.json(error, { status: 401 });
   const { email, name, image } = user;
@@ -103,7 +110,7 @@ export async function POST(req: Request) {
       .limit(1);
     if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
-    const responseBody = await createTokens(amcatsession);
+    const responseBody = await createTokens(amcatsession, false);
     return NextResponse.json(responseBody, { status: 200 });
   }
 }
@@ -123,4 +130,13 @@ async function rmExpiredSessions() {
   if (Math.random() > 0.01) return;
 
   await db.delete(amcatSessions).where(lt(amcatSessions.expires, new Date()));
+}
+
+function checkRegisteredClient(
+  clientId: string,
+  clientSecret: string | null,
+  resource: string,
+) {
+  // placeholder if we do want to add the option to register clients in MiddleCat
+  return true;
 }

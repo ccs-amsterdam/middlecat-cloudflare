@@ -6,14 +6,13 @@ import * as client from "openid-client";
 const api_url = "http://localhost:3000";
 const app_url = "http://localhost:3000/demo_client";
 const client_id = "http://localhost:3000";
-const scope = "openid profile email";
 const secret = "complex_password_at_least_32_characters_long";
 
 export const clientConfig = {
   url: api_url,
   audience: api_url,
   client_id: client_id,
-  scope: scope,
+  scope: "openid profile email",
   redirect_uri: `${app_url}/auth/callback`,
   post_logout_redirect_uri: `${app_url}`,
   response_type: "code",

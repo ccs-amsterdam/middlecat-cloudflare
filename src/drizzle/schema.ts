@@ -1,4 +1,10 @@
-import { integer, sqliteTable, text, primaryKey, index } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  sqliteTable,
+  text,
+  primaryKey,
+  index,
+} from "drizzle-orm/sqlite-core";
 import type { AdapterAccount } from "@auth/core/adapters";
 
 // AUTH TABLES
@@ -30,7 +36,7 @@ export const accounts = sqliteTable(
   },
   (account) => ({
     pk: primaryKey({ columns: [account.provider, account.providerAccountId] }),
-  })
+  }),
 );
 
 export const sessions = sqliteTable("session", {
@@ -50,7 +56,7 @@ export const verificationTokens = sqliteTable(
   },
   (vt) => ({
     pk: primaryKey({ columns: [vt.identifier, vt.token] }),
-  })
+  }),
 );
 
 export const amcatSessions = sqliteTable(
@@ -90,5 +96,22 @@ export const amcatSessions = sqliteTable(
   (table) => ({
     emailIdx: index("email_idx").on(table.email),
     expiresIdx: index("expires_idx").on(table.expires),
-  })
+  }),
 );
+
+export const registeredClients = sqliteTable("registeredClient", {
+  clientId: text("clientId").primaryKey(),
+  clientSecret: text("clientSecret"),
+  // Need to think how to do this. AmCAT would need to specify the tenant,
+  // e.g. https://middlecat.net/[authDomain]
+  // The user can then create a 'tenant' on Middlecat and use this on their server.
+  // .well-known should then also be per 'tenant'
+  // middlecat.com/myamcat/.well-known/...
+  // and in oidc_configuration then add the [myamcat] part to the authorize endpoint.
+  // make two separate authorize endpoint to keep it simple?
+  authDomain: text("authDomain").notNull(),
+  resource: text("resource").notNull(),
+  name: text("name").notNull(),
+  redirectUris: text("redirectUris").notNull(),
+
+}

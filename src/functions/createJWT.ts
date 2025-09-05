@@ -1,6 +1,17 @@
 import * as jose from "jose";
 
-interface AccessTokenPayload {
+interface MiddlecatAccessTokenPayload {
+  clientId: string;
+  resource: string;
+  email: string;
+  name: string;
+  image: string;
+  scope: string;
+  exp: number;
+  middlecat: string;
+}
+
+interface OIDCAccessTokenPayload {
   iss: string; // middlecat url
   sub: string; // email
   aud: string[] | string; // [api url, userinfo url]
@@ -22,7 +33,9 @@ interface IdTokenPayload {
 
 // can only be called server-side (from api endpoints)
 
-export async function createAccessToken(payload: AccessTokenPayload) {
+export async function createAccessToken(
+  payload: MiddlecatAccessTokenPayload | OIDCAccessTokenPayload,
+) {
   return createJWT(payload);
 }
 

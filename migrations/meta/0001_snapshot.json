@@ -1,6 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
+  "id": "afb60304-2d18-4120-bfd2-de81c862b6e8",
+  "prevId": "44a29fdf-0185-483c-967f-ec4afd88f8e4",
   "tables": {
     "account": {
       "name": "account",
@@ -88,15 +90,15 @@
         "account_userId_user_id_fk": {
           "name": "account_userId_user_id_fk",
           "tableFrom": "account",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -162,6 +164,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "oidc": {
+          "name": "oidc",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "0"
         },
         "email": {
           "name": "email",
@@ -292,15 +302,15 @@
         "session_userId_user_id_fk": {
           "name": "session_userId_user_id_fk",
           "tableFrom": "session",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -392,12 +402,14 @@
       "checkConstraints": {}
     }
   },
+  "views": {},
   "enums": {},
   "_meta": {
+    "schemas": {},
     "tables": {},
     "columns": {}
   },
-  "id": "44a29fdf-0185-483c-967f-ec4afd88f8e4",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "views": {}
+  "internal": {
+    "indexes": {}
+  }
 }

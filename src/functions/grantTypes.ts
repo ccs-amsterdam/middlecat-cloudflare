@@ -11,6 +11,7 @@ const db = getDb();
 export async function authorizationCodeRequest(
   code: string,
   codeVerifier: string,
+  oidc: boolean,
 ) {
   // validate the authorization code grant, and if pass create
   // the access token and refresh token
@@ -52,12 +53,14 @@ export async function authorizationCodeRequest(
     .update(amcatSessions)
     .set({ secretExpires: null })
     .where(eq(amcatSessions.id, amcatSession.id));
-  return await createTokens(amcatSession);
+
+  return await createTokens(amcatSession, oidc);
 }
 
 export async function refreshTokenRequest(
   sessionId: string,
   refreshToken: string,
+  oidc: boolean,
 ) {
   // the refresh token that the client receives is actually the session id + refresh token
   //const [sessionId, refreshToken] = refresh_token.split(".");
@@ -131,11 +134,12 @@ export async function refreshTokenRequest(
     }
   }
 
-  return await createTokens(amcatSession);
+  return await createTokens(amcatSession, oidc);
 }
 
 export async function createTokens(
   amcatSession: InferSelectModel<typeof amcatSessions>,
+  OIDC: boolean,
 ) {
   const { email, name, image, clientId, resource } = amcatSession;
 
@@ -147,26 +151,6 @@ export async function createTokens(
   const iat = Math.floor(Date.now() / 1000);
   const exp = iat + 60 * expireMinutes;
 
-  const access_token = await createAccessToken({
-    iss: middlecat,
-    sub: email || "",
-    aud: resource,
-    azp: clientId,
-    exp: exp,
-    iat,
-    scope: amcatSession.scope || "",
-  });
-
-  const id_token = await createIdToken({
-    iss: middlecat,
-    sub: email || "",
-    aud: clientId,
-    exp: exp,
-    iat,
-    name: name || "",
-    picture: image || "",
-  });
-
   // oauth typically uses expires_in in seconds as a relative offset (due to local time issues).
   // we subtract 5 seconds because of possible delay in setting expires_in and the client receiving it
   const expires_in = expireMinutes * 60 - 5;
@@ -174,13 +158,45 @@ export async function createTokens(
   // the refresh token that the client receives is actually the session id + refresh token
   const refresh_token = amcatSession.id + "." + amcatSession.refreshToken;
 
-  return {
-    token_type: "bearer",
-    access_token,
-    id_token,
-    refresh_token,
-    expires_in,
-  };
+  let access_token: string;
+  let id_token: string | undefined = undefined;
+
+  const token_type = "bearer";
+
+  if (OIDC) {
+    access_token = await createAccessToken({
+      iss: middlecat,
+      sub: email || "",
+      aud: resource,
+      azp: clientId,
+      exp: exp,
+      iat,
+      scope: amcatSession.scope || "",
+    });
+
+    id_token = await createIdToken({
+      iss: middlecat,
+      sub: email || "",
+      aud: clientId,
+      exp: exp,
+      iat,
+      name: name || "",
+      picture: image || "",
+    });
+  } else {
+    access_token = await createAccessToken({
+      clientId,
+      resource,
+      email: email || "",
+      name: name || "",
+      image: image || "",
+      scope: amcatSession.scope || "",
+      exp,
+      middlecat,
+    });
+  }
+
+  return { token_type, access_token, id_token, refresh_token, expires_in };
 }
 
 export async function killSessionRequest(sessionId: string) {

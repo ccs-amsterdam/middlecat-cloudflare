@@ -9,7 +9,7 @@ import * as client from "openid-client";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  const openIdClientConfig = await getClientConfig();
+  const oidcConfig = await getClientConfig();
   const headerList = await headers();
   const host =
     headerList.get("x-forwarded-host") || headerList.get("host") || "localhost";
@@ -17,29 +17,18 @@ export async function GET(request: NextRequest) {
   const currentUrl = new URL(
     `${protocol}://${host}${request.nextUrl.pathname}${request.nextUrl.search}`,
   );
-  const tokenSet = await client.authorizationCodeGrant(
-    openIdClientConfig,
-    currentUrl,
-    {
-      pkceCodeVerifier: session.code_verifier,
-      expectedState: session.state,
-    },
-  );
+  const tokenSet = await client.authorizationCodeGrant(oidcConfig, currentUrl, {
+    pkceCodeVerifier: session.code_verifier,
+    expectedState: session.state,
+  });
   const { access_token } = tokenSet;
   session.isLoggedIn = true;
   session.access_token = access_token;
   const claims = tokenSet.claims()!;
 
-  console.log(tokenSet);
-  console.log(claims);
-
   const { sub } = claims;
   // call userinfo endpoint to get user info
-  const userinfo = await client.fetchUserInfo(
-    openIdClientConfig,
-    access_token,
-    sub,
-  );
+  const userinfo = await client.fetchUserInfo(oidcConfig, access_token, sub);
   // store userinfo in session
   session.userInfo = {
     sub: userinfo.sub,

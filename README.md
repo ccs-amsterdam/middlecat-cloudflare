@@ -1,27 +1,34 @@
 ## Cat-in-the-middle authentication
 
-MiddleCat is an OIDC provider with a twist, designed specifically for simplifying the deployment of AMCAT.
+MiddleCat is an identity provider with a designed specifically for simplifying the deployment of AMCAT.
 It deviates a little bit from the standard OAuth2.0 / OIDC flows, in that it doesn't require clients to provide a client id and secret.
 This allows it to work out-of-the-box for any AmCAT server and client.
-The price for this is that it's not as secure as a full-featured provider like Auth0 or Keycloak, but we believe it's secure enough for the following use cases:
+The price for this is that it's not as secure as an audited OIDC identity provider, but we believe it's secure enough for the following use cases:
 
 - You want to try out AmCAT first without going through the hassle of setting up a full OIDC provider
 - You need a quick server for demos, tutorial or teaching
 - Your data is not super sensitive
 
-## Why you shouldn't be here
+If you are working with sensitive data, and/or are required to meet specific compliance obligations like SOC 2, HIPAA, or ISO 27001, you should instead configure AmCAT to work with an established OIDC provider like Auth0 or Keycloak.
+
+## Why you maybe shouldn't be here
 
 You probably don't want to set up a MiddleCat server yourself.
 If you're using AmCAT, you can use our server at https://middlecat.net.
 This does mean that you're trusting us to handle your authentication.
-But if you are working with sensitive data that requires managing your authentication yourself, we recommend using a full-featured provider like Auth0 or Keycloak, as explained in the AmCAT documentation.
+
+If you don't trust us (I mean, I get it...), rather than setting up your own MiddleCat server, it will often be easier and better to set up a full-featured OIDC provider like Auth0 or Keycloak.
+
+Running your own MiddleCat server is an edge case, where you do want a quick and easy authentication server for your own AmCAT deployments, but you don't want to use our server.
+
+Really, the main reason this repository is here at all is that on the off chance that I get eaten by my cats, I want to make sure that people can still run MiddleCat.
+
 
 # Installation
 
-MiddleCat is a NextJS app designed to be deployed on Cloudflare, which includes all the batteries and is easy to set up.
-It's deployed on the edge, close to your users, and you don't have to manage any servers.
-The database is a Cloudflare D1 database, which is a SQLite database in the cloud.
-For a small server the free tier should be sufficient, and if you take the basic 5 bucks a month subscription you get a lot of extra capacity.
+MiddleCat is a NextJS app designed to be deployed on Cloudflare.
+Cloudflare works well for this because it's fast, cheap and easy, and includes most of the batteries you need.
+For a small server the free tier should be sufficient, and if you take the basic 5 bucks a month subscription you'll have more than enough resources for a large number of users.
 
 ## Install dependencies
 
@@ -76,7 +83,7 @@ npm run dev
 
 # Server-side implementation
 
-To let a server use your Middlecat, it need to have an API endpoint that tells which Middlecat server it users, and validate Middlecat tokens using this Middlecat's public key. Specifically, you'll need to do the following:
+To let a server (like AmCAT) use Middlecat, it need to have an API endpoint that tells which Middlecat server it users, and validate Middlecat tokens using this Middlecat's public key. Specifically, you'll need to do the following:
 
 - Create a **[server-api]/config** GET endpoint that returns a JSON object with (at least) a 'middlecat_url'. By providing this url, the server indicates that it trusts this MiddleCat server to sign it's access_tokens
 - Obtain the **public_key** from this MiddleCat server. This can be obtained from **[middlecat]/api/configuration**, which returns a JSON object with (among other things) a **public_key**. The public key could change, so make sure to re-check routinely
@@ -84,32 +91,20 @@ To let a server use your Middlecat, it need to have an API endpoint that tells w
 - Also (!!) verify that the **resource** claim in the access_token is the current server. The resource (sometimes called **audience**) specifies the server for which the user authorized the client.
 - Optionally, other claims can be used, e.g., to determine scope or block/only-allow certain clients.
 
-# React clients
+## Server-side implementation with OIDC
 
-The current web clients for AmCAT are all written in React. We therefore provide a hook that makes it easy to setup a MiddleCat login. If you're already running MiddleCat, you can test the hook at **[middlecat]/demo_client**
+To make your server also support other OIDC providers, you can add a "oidc_url" to the /config endpoint. This should be the URL of the OIDC provider. The AmCAT clients
 
-First install the middlecat-sdk NPM module
 
-```
-npm install middlecat-sdk
-```
 
-Then use the hook to get a user and AuthForm component.
+# Clients
 
-```
-function Component() {
-  const { user, AuthForm } = useMiddlecat();
+MiddleCat supports the standard OAuth2.0 flows.
+Any self-respecting programming language should have libraries that support this.
+Below we have an example for R, using the `httr2` package.
 
-  return <AuthForm />
-}
-```
-
-The user object contains basic user details (email, name, image) and an Axios instance called 'api'. The Axios instance already has the base_url set to the host that a user connected to, and the access_token is added securely (insofar as possible) by intercepting the requests. Refresh token rotation is handled behind
-the scenes, so the user.api should be all that you really need.
-
-The AuthForm is a component for a Login/Logout screen. It is also possible to make a custom screen, for which useMiddlecat returns the signIn and signOut methods and a loading state.
-
-By default, the refresh_token is not stored. This is safer, but has the downside that a user will have to authenticate for every new session (including refreshing the page and opening other tabs). A more convenient alternative is to set `useMiddlecat({storeToken: true})`. This stores the refresh token in localstorage. This is less secure because the tokens could be more easily stolen in case of a XSS attack, so it is not recommended if data is very sensitive. Also see the excellent explanation on [Auth0](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation) for some details on how refresh token rotation mitigates the risk somewhat. If you want both convenience and security, read on about using React with a (small, optionally stateless) backend.
+For web clients we strongly recommend using a fullstack application that can handle the OAuth flow on the backend, and store the refresh_token as a samesite httponly cookie.
+The demo_client in this repository shows how to do this with NextJS.
 
 ## React with a samesite backend (e.g. NextJS)
 
@@ -127,9 +122,9 @@ export default async function handler(req, res) {
 
 In the hook, you then set bff (backend-for-frontend) to the path of the endpoint: `useMiddlecat({bff: "/api/bffAuth"})`
 
-# Building new clients (R, Python, etc.)
+## R client example
 
-MiddleCat follows the OAuth2.0 protocol, which should have built in support in most programming environments. As an example we'll show how to do this with the httr2 package in R.
+This is how you could implement MiddleCat authentication in an R client, using the `httr2` package.
 
 ```
 library(httr2)

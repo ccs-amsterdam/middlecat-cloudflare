@@ -4,7 +4,7 @@ import {
   refreshTokenRequest,
   killSessionRequest,
 } from "@/functions/grantTypes";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 const headers = {
@@ -12,6 +12,10 @@ const headers = {
   "Access-Control-Allow-Methods": "POST",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers });
+}
 
 const authorizationCodeSchema = z.object({
   grant_type: z.literal("authorization_code"),
@@ -36,7 +40,10 @@ const bodySchema = z.discriminatedUnion("grant_type", [
   killSessionSchema,
 ]);
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams;
+  const oidc = searchParams.get("oidc") === "true";
+
   const rawBody = await getRequestBody(req);
   const bodyValidator = bodySchema.safeParse(rawBody);
 
@@ -53,13 +60,18 @@ export async function POST(req: Request) {
       const responseBody = await authorizationCodeRequest(
         body.code,
         body.code_verifier,
+        oidc,
       );
       return NextResponse.json(responseBody, { status: 200, headers });
     }
 
     if (body.grant_type === "refresh_token") {
       const [sessionId, refreshToken] = body.refresh_token.split(".");
-      const responseBody = await refreshTokenRequest(sessionId, refreshToken);
+      const responseBody = await refreshTokenRequest(
+        sessionId,
+        refreshToken,
+        oidc,
+      );
       return NextResponse.json(responseBody, { status: 200, headers });
     }
 
@@ -83,8 +95,4 @@ export async function POST(req: Request) {
         : "Invalid request";
     return NextResponse.json({ error }, { status: 400, headers });
   }
-}
-
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers });
 }

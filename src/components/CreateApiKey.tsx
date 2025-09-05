@@ -189,22 +189,6 @@ function CreateKeyForm({
     const expires = new Date(String(formData.get("expires_date") || ""));
     const resource = formData.get("resource") as string;
 
-    // MAYBE JUST MAKE THIS A WARNING?
-    // NOT THROWING AN ERROR IS USEFULL FOR SERVERS THAT MIDDLECAT CANNOT CONNECT TO,
-    // FOR EXAMPLE WHEN THE SERVER IS BEHIND A FIREWALL
-    //
-    // try {
-    //   const resourceConfig = await getResourceConfig(resource);
-    //   const thisMiddlecat = window.location.origin;
-    //   if (resourceConfig.middlecat_url !== thisMiddlecat) {
-    //     setError(`Server users a different MiddleCat: ${resourceConfig.middlecat_url}`);
-    //     return;
-    //   }
-    // } catch (e) {
-    //   setError(`Could not get server config`);
-    //   return;
-    // }
-
     const body = {
       csrfToken,
       resource,

@@ -2,7 +2,6 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { DefaultSession } from "next-auth";
-import getResourceConfig from "@/functions/getResourceConfig";
 import { useState } from "react";
 import useCsrf from "@/query/useCsrf";
 import { Loading } from "@/components/Loading";
@@ -12,13 +11,29 @@ import { ErrorMsg } from "@/components/ErrorMsg";
 import SignIn from "@/components/SignIn";
 
 export default function Authorize() {
-  const { data: csrfToken } = useCsrf();
-  const { data: session, status } = useSession();
+  const { data: csrfToken, isLoading: csrfLoading } = useCsrf();
+  const { data: session, status: sessionStatus } = useSession();
+
+  // Look-up client_id in database.
+  const searchParams = useSearchParams();
+  const client_id = searchParams.get("client_id");
+  const client_secret = searchParams.get("client_secret");
+  if (!client_id) return <ErrorMsg>Client ID is missing</ErrorMsg>;
+  const { data: registeredClient, isLoading: clientCheckLoading } =
+    useClientCheck(client_id, client_secret);
+  // TODO: create useClientCheck hook.
 
   function SwitchComponent() {
-    if (status === "loading") return <Loading />;
-    if (status === "unauthenticated" || !session) return <SignIn />;
-    return <ConfirmConnectRequest session={session} csrfToken={csrfToken} />;
+    if (sessionStatus === "loading" || csrfLoading || clientCheckLoading)
+      return <Loading />;
+    if (sessionStatus === "unauthenticated" || !session) return <SignIn />;
+    return (
+      <ConfirmConnectRequest
+        session={session}
+        csrfToken={csrfToken}
+        registeredClient={registeredClient}
+      />
+    );
   }
 
   return (
@@ -45,11 +60,13 @@ export default function Authorize() {
 interface ConfirmConnectRequestProps {
   session: DefaultSession;
   csrfToken: string | undefined;
+  registeredClient: { resource: string; redirect_uris: string[] };
 }
 
 function ConfirmConnectRequest({
   session,
   csrfToken,
+  registeredClient,
 }: ConfirmConnectRequestProps) {
   const user = session.user;
   const router = useRouter();
@@ -57,10 +74,10 @@ function ConfirmConnectRequest({
   const [loading, setLoading] = useState(false);
 
   const client_id = searchParams.get("client_id");
+  const client_secret = searchParams.get("client_secret");
   const redirect_uri = searchParams.get("redirect_uri");
   const state = searchParams.get("state");
   const code_challenge = searchParams.get("code_challenge");
-  const resource = searchParams.get("resource");
   const scope = searchParams.get("scope") || "default";
   const session_type = searchParams.get("session_type") || "";
   const refresh_mode = searchParams.get("refresh_mode") || "";
@@ -72,7 +89,18 @@ function ConfirmConnectRequest({
   if (!redirect_uri) return <ErrorMsg>Redirect URI is missing</ErrorMsg>;
   if (!state) return <ErrorMsg>State is missing</ErrorMsg>;
   if (!code_challenge) return <ErrorMsg>Code challenge is missing</ErrorMsg>;
-  if (!resource) return <ErrorMsg>Resource is missing</ErrorMsg>;
+
+  let resource = searchParams.get("resource");
+  if (registeredClient) {
+    resource = registeredClient.resource;
+    if (!registeredClient.redirect_uris.includes(redirect_uri)) {
+      return (
+        <ErrorMsg>Redirect URI is not registered for this client</ErrorMsg>
+      );
+    }
+  } else {
+    if (!resource) return <ErrorMsg>Resource is missing</ErrorMsg>;
+  }
 
   const clientURL = new URL(redirect_uri);
   const serverURL = new URL(resource);
@@ -80,13 +108,15 @@ function ConfirmConnectRequest({
   const type = session_type === "api_key" ? "apiKey" : "browser";
   const refresh_rotate = refresh_mode !== "static";
 
-  const clientLabel = type === "browser" ? clientURL.host : client_id;
+  // note that clientURL is based on the redirect URL. The client id is not shown
+  const clientLabel = clientURL.host;
   const localhost = /^localhost/.test(clientURL.host);
+
   let clientNote = "";
   if (localhost) {
-    clientNote = `This authorization request comes from your own device, so we cannot verify its legitimacy. Only authorize if you yourself initiated this authorization request.`;
+    clientNote = `This authorization request comes from your own device (${clientLabel}). Only authorize if you yourself initiated this authorization request.`;
   } else {
-    clientNote = `${clientLabel} is an unregistered web application. Only authorize if you know and trust this website.`;
+    clientNote = `${clientLabel} is a website. Only authorize if you were directed here from this website, and you trust it.`;
   }
 
   if (type === "browser") {
@@ -106,6 +136,7 @@ function ConfirmConnectRequest({
     setLoading(true);
     createAmcatSession({
       clientId: client_id,
+      clientSecret: client_secret,
       redirectUri: redirect_uri,
       resource,
       state,
@@ -114,7 +145,7 @@ function ConfirmConnectRequest({
       type,
       refreshRotate: refresh_rotate,
       expiresIn: expires_in,
-      csrfToken: csrfToken,
+      csrfToken,
     })
       .then((response_url) => {
         router.push(response_url);
@@ -258,6 +289,7 @@ function ConfirmConnectRequest({
 
 interface AmcatSessionParams {
   clientId: string;
+  clientSecret: string | null;
   redirectUri: string;
   resource: string;
   state: string;
@@ -279,6 +311,7 @@ const oauthAuthorizeSchema = z.object({
  */
 async function createAmcatSession({
   clientId,
+  clientSecret,
   redirectUri,
   resource,
   state,
@@ -297,8 +330,8 @@ async function createAmcatSession({
     },
     body: JSON.stringify({
       clientId,
+      clientSecret,
       resource,
-      resourceConfig: await getResourceConfig(resource),
       state,
       codeChallenge,
       scope,
@@ -316,7 +349,7 @@ async function createAmcatSession({
     console.error(res.status, res.statusText);
     if (body.zod)
       console.error(
-        "Invalid parameters passed to newAmcatSession route. This shouldn't happen (obviously). See issues to debug",
+        "Invalid parameters passed to newAmcatSession route. Maybe try passing the right parameters",
         body.zod.issues,
       );
     throw new Error("Failed to create session");
