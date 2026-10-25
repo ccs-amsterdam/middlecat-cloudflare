@@ -1,0 +1,21 @@
+# Copy to .dev.vars for local development (or run `pnpm generate_env`).
+# In production, set these with `wrangler secret put <NAME>`.
+
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=[a big cryptographic pseudo random secret goes here]
+
+# encrypts the token signing keys (which MiddleCat creates and rotates itself), and keys the email hashes
+KEY_ENCRYPTION_SECRET=[another big random secret, at least 32 characters]
+
+GITHUB_ID=
+GITHUB_SECRET=
+
+GOOGLE_ID=
+GOOGLE_SECRET=
+
+# Email login: Cloudflare Email Service (EMAIL binding in wrangler.jsonc) or Resend
+EMAIL_FROM="MiddleCat <signin@yourdomain>"
+RESEND_API_KEY=
+
+# comma separated emails of MiddleCat admins (the /admin page)
+MIDDLECAT_ADMINS=

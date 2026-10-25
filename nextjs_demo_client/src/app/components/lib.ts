@@ -5,9 +5,10 @@ import * as client from "openid-client";
 // normally set these with env vars
 const identity_provider_url =
   process.env.IDENTITY_PROVIDER_URL || "http://localhost:3000";
-const amcat_url =
-  process.env.AMCAT_URL || "http://localhost:3000/api/demo_resource";
 const client_url = process.env.CLIENT_URL || "http://localhost:3001";
+// MiddleCat only signs users in to the server itself, so the resource is on the client's own origin
+// (like AmCAT: client https://amcat.nl, resource https://amcat.nl/api)
+const amcat_url = process.env.AMCAT_URL || client_url;
 const secret =
   process.env.COOKIE_SECRET || "complex_password_at_least_32_characters_long";
 
@@ -27,6 +28,7 @@ export const clientConfig = {
 export interface SessionData {
   isLoggedIn: boolean;
   access_token?: string;
+  id_token?: string;
   code_verifier?: string;
   state?: string;
   userInfo?: {

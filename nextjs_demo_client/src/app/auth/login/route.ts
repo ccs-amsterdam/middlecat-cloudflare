@@ -6,7 +6,7 @@ import {
 } from "../../components/lib";
 import * as client from "openid-client";
 
-const resource_url = process.env.AMCAT_URL || "";
+const resource_url = clientConfig.audience;
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;

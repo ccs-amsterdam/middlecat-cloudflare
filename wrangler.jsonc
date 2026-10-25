@@ -4,13 +4,14 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "middlecat-cloudflare",
-  "main": ".open-next/worker.js",
-  "compatibility_date": "2025-03-01",
+  "name": "middlecat-oidc",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Static files (css, js, fonts) are served directly. Everything else goes to the worker.
   "assets": {
     "binding": "ASSETS",
-    "directory": ".open-next/assets",
+    "directory": "./public",
   },
   "observability": {
     "enabled": true,
@@ -18,42 +19,40 @@
   "d1_databases": [
     {
       "binding": "DB1",
-      "database_id": "3f5e804f-94db-4966-9726-a871c5c571a2",
-      "database_name": "middlecat_db",
+      "database_id": "replace-with-your-database-id",
+      "database_name": "middlecat_oidc",
+      "migrations_dir": "migrations",
     },
   ],
-  /**
-   * Smart Placement
-   * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
-   */
-  // "placement": { "mode": "smart" },
+  // Hourly: create upcoming signing keys, remove old ones, delete expired sessions and inactive users
+  "triggers": {
+    "crons": ["17 * * * *"],
+  },
+  // Burst limit for /authorize (per IP) and /api/token (per session)
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 30, "period": 60 },
+    },
+  ],
+  // Cloudflare Email Service for sign-in emails (Workers Paid plan, domain onboarded to Cloudflare email).
+  // If configured (together with EMAIL_FROM), it's used instead of Resend.
+  // "send_email": [{ "name": "EMAIL" }],
 
+  // Keep port 3000 locally, so the demo client works unchanged.
+  "dev": {
+    "port": 3000,
+  },
   /**
-   * Bindings
-   * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-   * databases, object storage, AI inference, real-time communication and more.
-   * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+   * Configuration (set with `wrangler secret put <NAME>`, or in .dev.vars for local development):
+   * BETTER_AUTH_URL       public URL of this MiddleCat (the OIDC issuer), e.g. https://oidc.middlecat.net
+   * BETTER_AUTH_SECRET    random secret for signing login cookies
+   * KEY_ENCRYPTION_SECRET random secret (at least 32 characters) that encrypts the token signing keys
+   *                       (which MiddleCat creates and rotates itself) and keys the email hashes
+   * GITHUB_ID / GITHUB_SECRET, GOOGLE_ID / GOOGLE_SECRET   social login
+   * EMAIL_FROM            sender of sign-in emails, e.g. "MiddleCat <signin@middlecat.net>"
+   * RESEND_API_KEY        email login via Resend (if the Cloudflare EMAIL binding isn't configured)
+   * MIDDLECAT_ADMINS      comma separated emails of admins (the /admin page, server budgets)
    */
-
-  /**
-   * Environment Variables
-   * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-   */
-  // "vars": { "MY_VARIABLE": "production_value" },
-  /**
-   * Note: Use secrets to store sensitive data.
-   * https://developers.cloudflare.com/workers/configuration/secrets/
-   */
-
-  /**
-   * Static Assets
-   * https://developers.cloudflare.com/workers/static-assets/binding/
-   */
-  // "assets": { "directory": "./public/", "binding": "ASSETS" },
-
-  /**
-   * Service Bindings (communicate between multiple Workers)
-   * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-   */
-  // "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
 }

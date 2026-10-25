@@ -1,56 +1,153 @@
 ## Cat-in-the-middle authentication
 
-MiddleCat is an identity provider with a designed specifically for simplifying the deployment of AMCAT.
-It deviates a little bit from the standard OAuth2.0 / OIDC flows, in that it doesn't require clients to provide a client id and secret.
-This allows it to work out-of-the-box for any AmCAT server and client.
-The price for this is that it's not as secure as an audited OIDC identity provider, but we believe it's secure enough for the following use cases:
+MiddleCat is a login service for [AmCAT](https://github.com/ccs-amsterdam/amcat4) servers. It's a regular OpenID Connect (OIDC)
+provider that works out of the box: a new AmCAT server can use it without registering anything, so you can try AmCAT
+or run a small server without setting up authentication yourself. Users sign in with GitHub, Google or an email link.
 
-- You want to try out AmCAT first without going through the hassle of setting up a full OIDC provider
-- You need a quick server for demos, tutorial or teaching
-- Your data is not super sensitive
+MiddleCat has one restriction compared to a general-purpose OIDC provider: **a server can only sign users in to itself.**
+The OIDC client is the server's own backend, on the same origin as the server (for AmCAT: the client is `https://amcat.nl`
+and the server is `https://amcat.nl/api`). The backend runs the login flow and gives its frontend a session cookie.
+That's how AmCAT is designed, and it's what makes client registration unnecessary when using MiddleCat for authentication (see [Security model](#security-model)).
 
-If you are working with sensitive data, and/or are required to meet specific compliance obligations like SOC 2, HIPAA, or ISO 27001, you should instead configure AmCAT to work with an established OIDC provider like Auth0 or Keycloak.
+## Why you probably shouldn't run your own MiddleCat
 
-## Why you maybe shouldn't be here
+Middlecat is designed for easy onboarding of AmCAT servers, not for running your own OIDC provider. 
 
-You probably don't want to set up a MiddleCat server yourself.
-If you're using AmCAT, you can use our server at https://middlecat.net.
-This does mean that you're trusting us to handle your authentication.
+So if you do not want to use our MiddleCat server, you should not run your own MiddleCat server. Instead, you should use an established OIDC provider, like an institutional login (e.g. SURFconext in the Netherlands), a hosted provider like Auth0, or a self-hosted one like Authentik or Keycloak. 
 
-If you don't trust us (I mean, I get it...), rather than setting up your own MiddleCat server, it will often be easier and better to set up a full-featured OIDC provider like Auth0 or Keycloak.
+# Using MiddleCat from a server
 
-Running your own MiddleCat server is an edge case, where you do want a quick and easy authentication server for your own AmCAT deployments, but you don't want to use our server.
+MiddleCat behaves like any OIDC provider. In AmCAT, set:
 
-Really, the main reason this repository is here at all is that on the off chance that I get eaten by my cats, I want to make sure that people can still run MiddleCat.
+- `oidc_url`: the MiddleCat URL (without trailing slash). Everything else is found through discovery at
+  `[oidc_url]/.well-known/openid-configuration`.
+- `oidc_client_id`: the server's own URL (`host`). No client secret is needed.
 
+What MiddleCat requires from a login request (authorization code flow):
 
-# Installation
+- `client_id`: a URL with the same origin as the server.
+- `resource`: the URL of the server's API (e.g. `https://amcat.nl/api`). This becomes the audience (`aud`) of the access token.
+- `redirect_uri`: on the same origin, within the `resource` path (e.g. `https://amcat.nl/api/auth/callback`).
+- PKCE with `S256`. A `state` (and `nonce` for the id_token) as usual.
+- https, or http for servers on `localhost` (development).
 
-MiddleCat is a NextJS app designed to be deployed on Cloudflare.
-Cloudflare works well for this because it's fast, cheap and easy, and includes most of the batteries you need.
-For a small server the free tier should be sufficient, and if you take the basic 5 bucks a month subscription you'll have more than enough resources for a large number of users.
+Optional standard parameters: `prompt=none` (no user interaction: returns `login_required` or `consent_required` if needed;
+since users don't stay signed in to MiddleCat, this usually returns `login_required`),
+`prompt=login` (sign in again), `prompt=consent` (ask for confirmation again), and `max_age` (sign in again if the last login
+is older). For high-stakes actions, a server can start a login with `max_age=300` and check `auth_time` in the id_token.
+
+Tokens:
+
+- The access token is a JWT with `iss` (the MiddleCat URL), `aud` (the `resource`), `sub` and `email` (the user's email),
+  `email_verified`, `name`, `auth_time` and `exp`. It's valid for 10 minutes.
+- The id_token also has `sid` (the session) and `picture`.
+- Refresh tokens rotate (see [Security model](#security-model)). A session ends after 14 days without use.
+- There's a userinfo endpoint, a token revocation endpoint (RFC 7009), and an end-session endpoint for logging out
+  (RP-initiated logout, with `id_token_hint` and a `post_logout_redirect_uri` on the server's origin).
+
+To verify tokens, a server must:
+
+- get the keys from the `jwks_uri` in the discovery document, and pick the key by the token's `kid`. Keys rotate, so cache the
+  JWKS for a few minutes and refetch it when a token has an unknown `kid`;
+- check the signature (RS256), `exp`, `iss`, and **that `aud` is the server's own API URL**.
+
+See [docs/resource-server-python.md](docs/resource-server-python.md) for a tested Python implementation, and the changes that
+AmCAT's OIDC mode needs. [nextjs_demo_client](nextjs_demo_client) is a minimal example of a server that signs users in with
+[openid-client](https://github.com/panva/openid-client).
+
+## Limits
+
+MiddleCat's free tier has daily limits (UTC days, see `src/lib/settings.ts`):
+
+| | Everyone combined | Per server |
+|---|---|---|
+| Email logins | 1000 | 100 |
+| GitHub logins | 5000 | 1000 (GitHub and Google combined) |
+| Google logins | 5000 | |
+
+A login counts when it starts (a sign-in email is sent, or the user goes to GitHub or Google). When a limit is reached,
+users see a message saying so. Users who are already signed in, and token refreshes, are not affected.
+
+If it's important that your users can always log in, ask the MiddleCat admins for a dedicated budget for your server.
+A server with a budget only counts against its own budget, not against the free tier. There's nothing to register:
+a budget applies to logins for the server's origin, which only that server can use.
+
+# Security model
+
+The login flow is the standard OIDC authorization code flow with PKCE. What a regular provider gets from client registration,
+MiddleCat gets from the same-origin rule:
+
+- **Codes only go to the server itself.** A registered client has fixed redirect URIs. In MiddleCat, the `redirect_uri` must be on the
+  server's own origin, within its API path. A code can only ever be delivered to the server that the tokens are for, and PKCE ties it
+  to the request that started the login. Codes can be used once, and when the server sends the `redirect_uri` again with the code exchange
+  (as OIDC clients normally do), it must match.
+- **Tokens only work at the server they're for.** The access token's `aud` is the server's API URL. One MiddleCat can serve many servers
+  because a token for one server is rejected by the others, *provided that every server checks `aud`*.
+- **A site can't pose as another site.** The `client_id` (the audience of the id_token) must be the server's own origin.
+
+What is different from a regular provider:
+
+- **No client secret.** Servers are public OIDC clients. For exchanging codes this doesn't matter (PKCE covers it). It does mean that
+  a leaked refresh token can be used without also knowing a server secret. It still only gives access to that one server, and
+  refresh tokens rotate, so using a stolen one is detected when the real user refreshes (see below), and ends the session.
+- **Anyone can run a server.** MiddleCat doesn't vet servers, just as "Sign in with Google" works on any site. The first time a user
+  signs in to a server, they see which server will receive their name and email address, and confirm. This is remembered per server.
+- **No extra security features.** No multi-factor authentication, account recovery processes, audits or certifications. That's the
+  real reason to use an established provider for serious servers.
+
+Other measures:
+
+- Only verified email addresses are passed on to servers. (GitHub accounts can have unverified addresses; those users have to
+  verify the address at GitHub, or use another sign-in method.)
+- Pages can't be framed (`frame-ancestors 'none'`, `X-Frame-Options: DENY`), so the sign-in confirmation can't be clickjacked.
+  It's submitted with a same-origin form POST (CSRF protection).
+- Signing keys rotate every 30 days, and are stored encrypted (see [Signing keys](#signing-keys)).
+- Refresh tokens rotate. After a rotation, the previous token can be used again for 60 seconds and returns the same new token,
+  so concurrent refreshes (e.g. from several browser tabs) don't break the session. Any other reuse of an old refresh token is
+  treated as theft and ends the session.
+- Authorization codes and refresh tokens are stored as SHA-256 hashes and compared in constant time.
+- Logins are limited per day (see [Limits](#limits)) and email logins per IP address. `/authorize` and `/api/token` have burst limits.
+
+## Personal data
+
+MiddleCat stores as little as possible (see the privacy page at `/privacy`):
+
+- Users don't stay signed in to MiddleCat: the MiddleCat login ends as soon as a server receives its code (signing in to a
+  server again means signing in to MiddleCat again, which for GitHub and Google is usually just a redirect). On the
+  dashboard, the login ends after 15 minutes without activity. Its data (email, name, picture, linked GitHub/Google account)
+  is deleted within an hour after that.
+- For each login at a server, the user's email, name and picture are encrypted with a key derived from the current refresh token
+  (before that: the authorization code). MiddleCat only stores hashes of those tokens, so only the server holding the token can
+  unlock them, when it refreshes. A keyed hash of the email address (HMAC) lets users find their sessions on the dashboard,
+  and remembers which servers they confirmed.
+
+Users can see and end their sessions, and "forget" servers, on the MiddleCat home page.
+
+# Running MiddleCat
+
+MiddleCat is a single [Hono](https://hono.dev) worker on Cloudflare Workers, with a D1 (SQLite) database.
+Users sign in to MiddleCat itself with GitHub, Google or an email link, handled by [Better Auth](https://www.better-auth.com).
+The OIDC provider part is MiddleCat's own code (`src/routes`, `src/lib`). See [docs/design.md](docs/design.md) for the design decisions.
 
 ## Install dependencies
 
 ```
-npm i
+pnpm install
 ```
 
 ## Set the environment variables
 
-We create a .env.local file for our settings, Identity providers and secrets.
-The easiest way to create this is to run `npm run generate_env`, which will automatically
-generate cryptographic secrets for you.
+For local development the settings and secrets go in a `.dev.vars` file.
+The easiest way to create this is to run `pnpm generate_env`, which generates the cryptographic secrets for you
+(see `.dev.vars.example` for all options).
 
-What you still need to do is to add the credentials for GitHub and Google login, and an SMTP server for email login.
-For email we use resend. For a simple server the free tier should be sufficient.
+What you still need to add are the credentials for GitHub and/or Google login, and an email provider for email login.
 
 ```
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=[a big cryptographic pseudo random secret goes here]
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=[a big cryptographic pseudo random secret goes here]
 
-NEXT_PUBLIC_PUBLICKEY="[public key goes here]"
-PRIVATEKEY="[private key goes here]"
+KEY_ENCRYPTION_SECRET=[another big random secret, at least 32 characters]
 
 GITHUB_ID=
 GITHUB_SECRET=
@@ -58,158 +155,70 @@ GITHUB_SECRET=
 GOOGLE_ID=
 GOOGLE_SECRET=
 
-RESEND_API_KEY="..."
+EMAIL_FROM="MiddleCat <signin@yourdomain>"
+RESEND_API_KEY=
+
+MIDDLECAT_ADMINS=you@example.com
 ```
+
+- `BETTER_AUTH_URL` is the public URL of your MiddleCat, and is used as the token issuer.
+- `KEY_ENCRYPTION_SECRET` encrypts the token signing keys (MiddleCat creates and rotates them itself, see [Signing keys](#signing-keys)),
+  and keys the email hashes. Changing it makes existing sessions disappear from users' dashboards, and servers ask for confirmation again.
+- When you register the GitHub/Google OAuth apps, use `[BETTER_AUTH_URL]/api/auth/callback/github` and
+  `[BETTER_AUTH_URL]/api/auth/callback/google` as callback URLs.
+- Email: either enable Cloudflare Email Service (uncomment the `send_email` binding in `wrangler.jsonc`; this requires the Workers Paid
+  plan and a domain onboarded to Cloudflare email) or set `RESEND_API_KEY`. Cloudflare is used if both are configured.
+- `MIDDLECAT_ADMINS`: emails of the people who can open `/admin` (usage per server, and setting budgets).
 
 ## Local development
 
-For development we use miniflare to emulate the D1 database locally. If all is well, you should just be able to migrate out of the box.
+Wrangler emulates the D1 database locally. Apply the migrations:
 
 ```
-npm run migrate:local
+pnpm migrate:up:local
 ```
 
-Now run the dev server
+Now run the dev server (on http://localhost:3000)
 
 ```
-npm run dev
+pnpm dev
 ```
 
-(note that in local development it's not possible to use the email login. Best way to test things is setting up the Google ID)
+(Email login only works with a configured email provider. The easiest way to test things is setting up a GitHub or Google ID.)
 
+Run the tests with `pnpm test`.
 
-## Deploying to cloudflare
+## Deploying to Cloudflare
 
-
-# Server-side implementation
-
-To let a server (like AmCAT) use Middlecat, it need to have an API endpoint that tells which Middlecat server it users, and validate Middlecat tokens using this Middlecat's public key. Specifically, you'll need to do the following:
-
-- Create a **[server-api]/config** GET endpoint that returns a JSON object with (at least) a 'middlecat_url'. By providing this url, the server indicates that it trusts this MiddleCat server to sign it's access_tokens
-- Obtain the **public_key** from this MiddleCat server. This can be obtained from **[middlecat]/api/configuration**, which returns a JSON object with (among other things) a **public_key**. The public key could change, so make sure to re-check routinely
-- Use the public key to validate tokens from authenticated users. Requests will have an **Authorization** header with the value: **Bearer [access_token]**
-- Also (!!) verify that the **resource** claim in the access_token is the current server. The resource (sometimes called **audience**) specifies the server for which the user authorized the client.
-- Optionally, other claims can be used, e.g., to determine scope or block/only-allow certain clients.
-
-## Server-side implementation with OIDC
-
-To make your server also support other OIDC providers, you can add a "oidc_url" to the /config endpoint. This should be the URL of the OIDC provider. The AmCAT clients
-
-
-
-# Clients
-
-MiddleCat supports the standard OAuth2.0 flows.
-Any self-respecting programming language should have libraries that support this.
-Below we have an example for R, using the `httr2` package.
-
-For web clients we strongly recommend using a fullstack application that can handle the OAuth flow on the backend, and store the refresh_token as a samesite httponly cookie.
-The demo_client in this repository shows how to do this with NextJS.
-
-## React with a samesite backend (e.g. NextJS)
-
-We recommend that AmCAT clients use a fullstack framework like NextJS. Next to other (obvious?) benefits, this enables a third, more secure option that uses the backend as a proxy for the OAuth flow, and stores the refresh_token as a samesite httponly cookie. This means it won't be accessible from JS, and thereby safe(r) from XSS. To use this option, an API endpoint has to be made with the bffAuthHandler. In NextJS this would look as follows:
+Create the D1 database (`pnpm exec wrangler d1 create middlecat_oidc`) and put its id in `wrangler.jsonc`.
+Then set the secrets, apply the migrations and deploy:
 
 ```
-import { bffAuthHandler } from "middlecat-sdk";
-import Cookies from "cookies";
-
-export default async function handler(req, res) {
-  const cookies = new Cookies(req, res);
-  return await bffAuthHandler(req, res, cookies);
-}
+pnpm exec wrangler secret put BETTER_AUTH_URL      # e.g. https://oidc.middlecat.net
+pnpm exec wrangler secret put BETTER_AUTH_SECRET
+pnpm exec wrangler secret put KEY_ENCRYPTION_SECRET
+pnpm exec wrangler secret put GITHUB_ID            # and GITHUB_SECRET, GOOGLE_ID, GOOGLE_SECRET, EMAIL_FROM, RESEND_API_KEY, MIDDLECAT_ADMINS
+pnpm migrate:up
+pnpm deploy
 ```
 
-In the hook, you then set bff (backend-for-frontend) to the path of the endpoint: `useMiddlecat({bff: "/api/bffAuth"})`
+An hourly cron trigger rotates the signing keys and deletes expired data.
 
-## R client example
+## Signing keys
 
-This is how you could implement MiddleCat authentication in an R client, using the `httr2` package.
+MiddleCat manages its token signing keys itself (table `signingKey`):
 
-```
-library(httr2)
-library(glue)
-```
+- Every 30 days a new key starts signing. Each key is published in the JWKS (`/.well-known/jwks`) 30 days before it is used,
+  and stays published until all tokens it signed have expired. Tokens carry the `kid` of their key.
+- The cron trigger creates upcoming keys and removes old ones. Keys are also created on demand, so a fresh install just works.
+- Private keys are encrypted with `KEY_ENCRYPTION_SECRET` (AES-GCM), so a database export doesn't contain usable keys.
 
-The main input is the URL of the API server that we want to connect to.
-The server will then provide all the details about what MiddleCat server to user.
-If you do not have a server, you can user a demo server thats included in MiddleCat.
+**Emergency rotation** (e.g. a leaked key): run `pnpm keys:revoke`. All keys stop being published and used, and new keys are
+created on the next request. Workers keep their loaded keys for up to 5 minutes, and servers cache the JWKS, so allow a few
+minutes. If `KEY_ENCRYPTION_SECRET` itself leaked, set a new one (`wrangler secret put KEY_ENCRYPTION_SECRET`) and then run
+`pnpm keys:revoke`. Until the revoke, token requests fail because the stored keys can't be decrypted.
 
-```
-server = "https://middlecat.up.railway.app/api/demo_resource"
-```
+## Legacy MiddleCat
 
-To get the server config, GET the config endpoint.
-
-```
-config = glue("{server}/config") |>
-  request() |>
-  req_perform() |>
-  resp_body_json()
-
-middlecat = config$middlecat_url
-```
-
-Now we can start the OAuth flow. The key information to provide is the
-token and authentication endpoints. For middlecat these are:
-
-- authorization: [middlecat_url]/authorize
-- tokens: [middlecat_url]/api/token
-
-```
-auth_url = glue("{middlecat}/authorize")
-token_url = glue("{middlecat}/api/token")
-```
-
-There are three main parameters/settings to set:
-
-- **client_id**. The name of the application that is shown to the user in the authentication flow. If session_type is browser (the default) then this will automatically be set to the URL from which the request is made.
-- **pkce**. MiddleCat requires using PKCE with the (standard) base64url encoded sha256 hash. httr2 supports this out of the box.
-- **resource**. The call to auth_url should include the 'resource' parameter, which should be the
-  URL of the AmCAT server.
-- **refresh = "static"** (optional). This disables refresh token rotation, which does not yet seem to be supported by httr2.
-- **session_type** (optional). Specify whether this is an "api_key" or "browser" session.
-
-```
-client_id = 'Some R package'
-auth_params = list(resource=server, refresh="static")
-
-client = oauth_client(id = client_id,
-                      token_url = token_url)
-tokens = oauth_flow_auth_code(client = client,
-                              auth_url = auth_url,
-                              pkce = TRUE,
-                              auth_params = auth_params)
-```
-
-After completing the flow you should have an access_token and refresh_token.
-You can use the access token as a bearer token to access the server API.
-If you're using the MiddleCat Demo resource, you can use the /test endpoint.
-
-```
-glue("{server}/test") |>
-  request() |>
-  req_auth_bearer_token(tokens$access_token) |>
-  req_perform() |>
-  resp_body_string()
-```
-
-Finally, you will need to refresh your access_token when (or before) it expires.
-This is also a standardized flow, and httr2 has a special function for it.
-
-```
-tokens = oauth_flow_refresh(client, tokens$refresh_token)
-```
-
-Note that this only works if refresh token rotation is disabled. Alternatively,
-this step can be done manually, so that it does support token rotation.
-
-```
-body = list(grant_type = 'refresh_token',
-            refresh_token = tokens$refresh_token)
-
-tokens = request(token_url) |>
-  req_body_json(body) |>
-  req_perform() |>
-  resp_body_json()
-```
+The original MiddleCat (Next.js, at https://middlecat.net) keeps running for existing AmCAT servers that use it with `middlecat_url`.
+This repository is the new MiddleCat, which new servers use as a regular OIDC provider. The two don't share data or keys.

@@ -1,0 +1,512 @@
+/* Component styles (previously styled-jsx blocks in the React components) */
+
+/* Header */
+.Header {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  vertical-align: middle;
+  position: relative;
+  color: white;
+  background: var(--header);
+  box-shadow: 0px 0px 10px 0px var(--secondary);
+  border-bottom: 1px solid var(--primary);
+}
+.Header h2 {
+  font-size: clamp(2rem, 17vw, 5rem);
+  line-height: 5rem;
+  font-weight: bold;
+  margin-bottom: 0;
+  margin-top: 0.5rem;
+}
+.Header h4 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+}
+
+/* Loading */
+.LoadingContainer {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  margin-top: 5rem;
+}
+.LoadingContainer h2 {
+  margin-top: 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: white;
+}
+.spike-loader {
+  --color: var(--primary);
+  position: relative;
+  width: 85px;
+  height: 50px;
+  background-repeat: no-repeat;
+  background-image: linear-gradient(var(--color) 50px, transparent 0), linear-gradient(var(--color) 50px, transparent 0),
+    linear-gradient(var(--color) 50px, transparent 0), linear-gradient(var(--color) 50px, transparent 0),
+    linear-gradient(var(--color) 50px, transparent 0), linear-gradient(var(--color) 50px, transparent 0);
+  background-position: 0px center, 15px center, 30px center, 45px center, 60px center, 75px center, 90px center;
+  animation: rikSpikeRoll 0.65s linear infinite alternate;
+}
+@keyframes rikSpikeRoll {
+  0% {
+    background-size: 10px 3px;
+  }
+  16% {
+    background-size: 10px 50px, 10px 3px, 10px 3px, 10px 3px, 10px 3px, 10px 3px;
+  }
+  33% {
+    background-size: 10px 30px, 10px 50px, 10px 3px, 10px 3px, 10px 3px, 10px 3px;
+  }
+  50% {
+    background-size: 10px 10px, 10px 30px, 10px 50px, 10px 3px, 10px 3px, 10px 3px;
+  }
+  66% {
+    background-size: 10px 3px, 10px 10px, 10px 30px, 10px 50px, 10px 3px, 10px 3px;
+  }
+  83% {
+    background-size: 10px 3px, 10px 3px, 10px 10px, 10px 30px, 10px 50px, 10px 3px;
+  }
+  100% {
+    background-size: 10px 3px, 10px 3px, 10px 3px, 10px 10px, 10px 30px, 10px 50px;
+  }
+}
+
+/* Error message */
+.ErrorMsg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: white;
+  text-align: center;
+}
+.ErrorMsg .ErrorType {
+  margin-top: 0.75rem;
+  color: var(--primary-warm);
+}
+.ErrorMsg h3 {
+  margin-top: 0.75rem;
+  padding: 1.25rem;
+}
+
+/* Sign in */
+.SignInForm {
+  width: 100%;
+  margin: 0 auto;
+  max-width: 415px;
+  color: white;
+  margin-top: 5vh;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+.ProviderButton {
+  position: relative;
+  text-align: center;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+.ProviderButton span {
+  flex-grow: 1;
+}
+.ProviderButton .Logo {
+  position: absolute;
+  left: 0.8rem;
+}
+.EmailForm {
+  display: flex;
+  flex-direction: column;
+  margin: 1rem;
+}
+.EmailInput {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.EmailInput input {
+  margin: 0rem 0rem;
+  width: 100%;
+  border-radius: 10px;
+  border: none;
+  height: 40px;
+  padding: 0.5rem 1rem;
+  font-size: inherit;
+}
+.EmailForm .Back {
+  background: var(--background);
+  color: white;
+}
+.SignInNotice {
+  margin: 1rem;
+  color: var(--primary);
+}
+.SignInError {
+  margin: 1rem;
+  background: #813030;
+  color: white;
+  border-radius: 5px;
+  padding: 0.5rem 1rem;
+}
+
+/* Dashboard */
+.Login {
+  margin: 2rem auto;
+  padding: 1rem 1rem;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  color: white;
+  text-align: center;
+}
+.Login .Loading {
+  cursor: progress;
+}
+.SignedInAs {
+  font-size: 0.9rem;
+  color: var(--primary);
+}
+.SignedInAs b {
+  color: white;
+}
+.AmcatSessions {
+  display: flex;
+  justify-content: center;
+}
+.SessionsError {
+  width: 100%;
+  text-align: center;
+}
+.SessionData {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  color: white;
+  padding: 1rem;
+  margin-top: 2rem;
+}
+.SessionContainer {
+  flex: 1 1 auto;
+  width: 50rem;
+  max-width: 90vw;
+  padding: 1rem 2rem;
+  text-align: center;
+  border: 1px solid var(--primary);
+  border-radius: 1rem;
+  box-shadow: 0px 1px 10px 0px var(--primary);
+}
+@media (max-width: 600px) {
+  .SessionContainer {
+    padding: 1rem 1rem;
+  }
+}
+.SessionContainer .LoadingContainer {
+  margin-top: 1rem;
+  padding: 1rem;
+}
+.AmcatSession {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0.5rem 0;
+  border: 1px solid var(--primary);
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.5rem;
+}
+.AmcatSession .Details {
+  flex: 1 1 auto;
+  width: 100%;
+  white-space: nowrap;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.AmcatSession .Context {
+  font-style: italic;
+  font-size: 0.8rem;
+  overflow: hidden;
+}
+.AmcatSession .Buttons {
+  position: absolute;
+  right: 0;
+  display: flex;
+  align-items: center;
+  margin-right: 5px;
+}
+.AmcatSession .Label {
+  color: var(--primary);
+}
+.AmcatSession button {
+  display: flex;
+  gap: 0.4rem;
+  width: auto;
+  white-space: nowrap;
+  margin: 0;
+  font-size: 1rem;
+  background: #222d;
+  color: white;
+  padding: 9px 5px;
+}
+.AmcatSession button svg {
+  width: 25px;
+  height: 25px;
+}
+
+/* Popup (confirm deleting an API key) */
+.popup {
+  transition: opacity 0.1s;
+  overflow: auto;
+  position: fixed;
+  border: 0px solid var(--primary);
+  max-height: 0px;
+  min-width: min(25rem, 80vw);
+  max-width: 80vw;
+  padding: 0rem 0.5rem;
+  border-radius: 1rem;
+  background: var(--background);
+  color: white;
+  text-align: center;
+  opacity: 0;
+  z-index: 50;
+}
+.popup.open {
+  max-height: 95vh;
+  padding: 0.5rem 0.5rem;
+  border: 1px solid var(--primary);
+  opacity: 1;
+}
+.popup button span {
+  width: 100%;
+  text-align: center;
+}
+
+/* Authorize (consent) */
+.AuthorizeContainer {
+  margin: auto;
+  width: 100%;
+  max-width: 500px;
+  padding: 0rem 1rem;
+  backdrop-filter: blur(3px);
+  border-radius: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.ConfirmConnection {
+  display: flex;
+  justify-content: space-evenly;
+  flex-direction: column;
+  padding: 1rem;
+  color: white;
+}
+.ConnectionContainer {
+  display: flex;
+  flex-direction: column;
+  font-size: 1.7rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+.ConnectionDetails {
+  padding: 1rem;
+  text-align: center;
+}
+.ClientNote {
+  font-size: 0.9rem;
+}
+.ConfirmMessage {
+  margin-top: 2rem;
+  font-size: 1rem;
+  text-align: center;
+}
+.RequestsAccess {
+  color: var(--primary);
+}
+.ConfirmConnection .User {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 800;
+  font-size: 1.7rem;
+  color: var(--primary);
+}
+.ConfirmConnection .UserName {
+  display: flex;
+  flex-direction: column;
+}
+.ConfirmConnection .UserEmail {
+  font-size: 1.2rem;
+}
+.ConfirmConnection .Connection {
+  margin: auto;
+  width: 100%;
+  transition: background-color 0.2s;
+  background: var(--secondary);
+  color: white;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid black;
+  border-radius: 10px;
+  padding: 2rem 1rem;
+}
+.ConfirmConnection .Connection:hover {
+  transform: scale(1.02);
+}
+.ConfirmConnection .ButtonGroup {
+  height: 4rem;
+  display: flex;
+  gap: 1rem;
+}
+.ConfirmConnection .ButtonGroup button,
+.ConfirmConnection .ButtonGroup form {
+  flex: 1 1 0;
+  height: 100%;
+  margin: 0px;
+}
+
+/* Email sent */
+.Page {
+  margin: 2rem auto;
+  padding: 1rem 1rem;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  text-align: center;
+}
+.Page i {
+  color: var(--primary);
+}
+
+/* Email sign in confirmation */
+.EmailSignin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+  margin-top: 10vh;
+}
+.EmailSignin form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 600px;
+  color: white;
+}
+.EmailSignin button {
+  padding: 1rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+/* Dashboard: servers */
+.ServerBlock {
+  margin: 1rem 0 1.5rem 0;
+  text-align: left;
+}
+.ServerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ServerHeader h3 {
+  margin: 0.5rem 0;
+  color: var(--primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ServerBlock > .Context {
+  font-style: italic;
+  font-size: 0.8rem;
+}
+.ForgetButton,
+.SmallButton {
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+/* Footer */
+.Footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: 0.8rem;
+}
+.Footer a {
+  color: var(--primary);
+}
+
+/* Privacy */
+.Privacy {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  color: white;
+  line-height: 1.5;
+}
+.Privacy h3 {
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+}
+
+/* Sign out confirmation */
+.LogoutForm {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* Admin */
+.Admin {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  color: white;
+}
+.AdminTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.AdminTable th,
+.AdminTable td {
+  text-align: left;
+  padding: 0.4rem;
+  border-bottom: 1px solid var(--primary-transparent);
+}
+.AdminTable form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.AdminForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.AdminForm input {
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: none;
+  flex: 1 1 12rem;
+}
+.AdminForm button {
+  margin: 0;
+  flex: 1 1 100%;
+}

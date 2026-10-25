@@ -22,13 +22,10 @@ export async function GET(request: NextRequest) {
     expectedState: session.state,
   });
 
-  // CLASSIC MIDDLECAT
-  if (!("id_token" in tokenSet)) {
-  }
-
-  const { access_token } = tokenSet;
+  const { access_token, id_token } = tokenSet;
   session.isLoggedIn = true;
   session.access_token = access_token;
+  session.id_token = id_token;
   const claims = tokenSet.claims()!;
 
   const { sub } = claims;
@@ -37,7 +34,7 @@ export async function GET(request: NextRequest) {
   // store userinfo in session
   session.userInfo = {
     sub: userinfo.sub,
-    name: userinfo.given_name!,
+    name: userinfo.name!,
     email: userinfo.email!,
     email_verified: userinfo.email_verified!,
   };

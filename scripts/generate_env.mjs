@@ -1,5 +1,5 @@
-import { generateKeyPair } from "jose";
-import crypto from "crypto";
+// Generate a .dev.vars file with fresh secrets for local development.
+// usage: node scripts/generate_env.mjs .dev.vars
 import { writeFileSync, existsSync } from "node:fs";
 import { argv } from "node:process";
 
@@ -11,25 +11,22 @@ if (existsSync(fname)) {
   process.exit(0);
 }
 
-const keypair = await generateKeyPair("RS256");
-
 function hexSecret(n) {
-  return Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) =>
-    b.toString(32).padStart(2, "0"),
-  ).join("");
+  return Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const secret = hexSecret(32);
-const publicKey = keypair.publicKey.export({ type: "spki", format: "pem" });
-const privateKey = keypair.privateKey.export({ type: "pkcs8", format: "pem" });
-
-const content = `NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=${secret}
-NEXT_PUBLIC_PUBLICKEY="${publicKey}"
-PRIVATEKEY="${privateKey}"
-GOOGLE_ID="<your google id>"
-GOOGLE_SECRET="<your google secret>"
-RESEND_API_KEY="<your resend api key>"
+// Token signing keys are created (and rotated) by the worker itself, encrypted with KEY_ENCRYPTION_SECRET
+const content = `BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=${hexSecret(32)}
+KEY_ENCRYPTION_SECRET=${hexSecret(32)}
+GITHUB_ID=
+GITHUB_SECRET=
+GOOGLE_ID=
+GOOGLE_SECRET=
+EMAIL_FROM=
+RESEND_API_KEY=
+MIDDLECAT_ADMINS=
 `;
 
 writeFileSync(fname, content, "utf8");
+console.log(`Created ${fname}`);
