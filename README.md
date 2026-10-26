@@ -1,8 +1,105 @@
 ## Cat-in-the-middle authentication
 
-MiddleCat is a login service for [AmCAT](https://github.com/ccs-amsterdam/amcat4) servers. It's a regular OpenID Connect (OIDC)
-provider that works out of the box: a new AmCAT server can use it without registering anything, so you can try AmCAT
+MiddleCat is the default login service for [AmCAT](https://github.com/ccs-amsterdam/amcat4) servers. It works like a regular OpenID Connect (OIDC)
+provider, but is designed so that new AmCAT servers can use it out-of-the-box, without having to register their server first. 
+This is possible because of a safety restriction on AmCAT: **the AmCAT web client HAS to be served from the same origin as the server**. The AmCAT API server (e.g., https://amcat.nl/api) handles the oAuth flow and sets a session cookie. Only the web client on the same origin (https://amcat.nl) can use that cookie (see [Security model](#security-model)). Any other clients (e.g., R, Python) need API keys to access the server.
+
+Normally, there are two primary reasons for requiring a server to register with an OIDC provider:
+
+* **Protect the user agains malicious clients**. A registered server can specify which clients are allowed to sign users in. These clients are given a client id and client secret, and the provider knows the allowed redirect URIs. This prevents malicious clients from signing users in and acting on their behalf. For AmCAT this is not needed, because only the AmCAT server is allowed to sign users in.
+
+* **Protect the OIDC provider**. An OIDC provider spends resources for each login. It needs to be able to limit which servers are allowed to use it, and how many logins they can do. 
+
+
+
+MiddleCat does not require servers to register, and it does not vet servers. Instead, it only allowed servers to sign users in to themselves.
+
+
+
+This negates the primary reason for OIDC providers to require the server to register
+
+
+
+
+
+In AmCAT, the redirect URI is always the same as the server's origin, so there is no risk of a malicious client signing users in to another server.  
+
+Normally, OIDC providers require a server to register. This both protects the users and the OIDC provider:
+
+* **Protecting the user**. A registered server can specify which clients are allowed to sign users in. These clients are given a client id and client secret, and the provider knows the allowed redirect URIs. This prevents malicious clients from signing users in and acting on their behalf. For AmCAT this is not needed, because the redirect URI is always the 
+
+* **Protecting the provider**. An OIDC provider spends resources for each login. 
+
+so that they can specify which clients are allowed to sign users in. The client then receives a client id and client secret, and the provider knows the allowed redirect URIs. This prevents malicious clients from signing users in and acting on their behalf.
+
+
+
+
+Because of this restriction, AmCAT does not need to register which clients can sign users in.
+
+Normally, OIDC providers require servers to register. This has the following reasons:
+
+* **The OIDC provider can control which servers are allowed to sign users in**. This is so a malicious server can't sign users in to another server, or steal tokens.
+
+* **Vetting servers**. A provider needs to know which servers are allowed to sign users in, and which redirect URIs they can use. This is so a malicious server can't sign users in to another server, or steal tokens.
+
+* **Protecting the user**. 
+
+* **Protecting the provider**. A provider needs to know which servers are allowed to sign users in, and which redirect URIs they can use. This is so a malicious server can't sign users in to another server, or steal token
+
+
+Normal OIDC provider re
+
+
+
+Because of this restriction, AmCAT does not need to register which clients can sign users in.
+
+* **Protecting users**. A provider needs to know which servers are allowed to sign users in, and which redirect URIs they can use. This is
+
+
+so a malicious server can't sign users in to another server.
+
+Any other clients for AmCAT (e.g. R, Python) need API keys to access the server.
+
+
+
+Because of this design, the OIDC provider (MiddleCat) does not need to know a client id and client secret for the server. 
+
+
+The OIDC client is the server's own backend, on the same origin as the server (for AmCAT: the client is `https://amcat.nl` and the server is `https://amcat.nl/api`). The backend runs the login flow and gives its frontend a session cookie. This is how AmCAT is designed, and it's what makes client registration unnecessary when using MiddleCat for authentication (see [Security model](#security-model)).
+
+Because of this design, AmCAT does not need to have a client id and client secret registered with MiddleCat. The OIDC client is the server's own backend, on the same origin as the server (for AmCAT: the client is `https://amcat.nl` and the server is `https://amcat.nl/api`). The backend runs the login flow
+
+
+and gives the client a session cookie. This is how AmCAT is designed, and it's what makes client registration unnecessary when using MiddleCat for authentication (see [Security model](#security-model)).
+
+
+The OIDC client is the server's own backend, on the same origin as the server (for AmCAT: the client is `https://amcat.nl` and the server is `https://amcat.nl/api`). The backend runs the login flow and gives its frontend a session cookie. That's how AmCAT is designed, and it's what makes client registration unnecessary when using MiddleCat for authentication (see [Security model](#security-model)).
+
+Normal OIDC providers require servers to register. This has two main reasons:
+
+* **Vetting servers**. A provider needs to know which servers are allowed to sign users in, and which redirect URIs they can use. This is to prevent a malicious server from signing users in to another server, or from stealing tokens.
+
+
+* **No client secret**. MiddleCat doesn't require servers to have a client secret, because it uses PKCE for the authorization code flow. This means that servers don't need to store a secret, and that a leaked refresh token can't be used to sign in to other servers.
+
+* **No registration needed**. MiddleCat doesn't vet servers, and doesn't require them to register. This means that any server can use it, and that servers don't need to set up their own authentication. The first time a user 
+
+
+
+: a new AmCAT server can use it without registering anything, so you can try AmCAT
 or run a small server without setting up authentication yourself. Users sign in with GitHub, Google or an email link.
+
+You might be wondering how this can be done safely without vetting servers, and without client registration. Normally, an OIDC provider needs to know which clients are allowed to sign users in, and which redirect URIs they can use. The reason this is possible is because of a safety restriction om AmCAT that MiddleCat can rely on: **a server can only sign users in to itself.** The OIDC client is the server's own backend, on the same origin as the server (for AmCAT: the client is `https://amcat.nl` and the server is `https://amcat.nl/api`). The backend runs the login flow and gives its frontend a session cookie. That's how AmCAT is designed, and it's what makes client registration unnecessary when using MiddleCat for authentication (see [Security model](#security-model)).
+
+* MiddleCat is a **server-only OIDC provider**. It only signs users in to the server that started the login, and the server's own backend is the OIDC client. On AmCAT, signing in is only possible on the server's own origin (e.g. `https://amcat.nl/api`), and the server's backend runs the login flow and gives its frontend a session cookie. This is why MiddleCat doesn't need client registration, and why it can be run without vetting servers.
+* 
+* 
+* There are two reasons why this is possible and safe:
+
+* MiddleCat is a **server-only OIDC provider**. It only signs users in to the server that started the login, and the server's own backend is the OIDC client. This is why MiddleCat doesn't need client registration, and why it can be run without vetting servers.
+* MiddleCat **stores as little as possible**. Users don't stay signed in to MiddleCat
+
 
 MiddleCat has one restriction compared to a general-purpose OIDC provider: **a server can only sign users in to itself.**
 The OIDC client is the server's own backend, on the same origin as the server (for AmCAT: the client is `https://amcat.nl`
